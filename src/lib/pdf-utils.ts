@@ -1,0 +1,327 @@
+import * as pdfjs from 'pdfjs-dist';
+// @ts-ignore
+import pdfWorker from 'pdfjs-dist/build/pdf.worker.js?url';
+import { PDFDocument, rgb, StandardFonts, degrees } from 'pdf-lib';
+import { PageItem } from '../types';
+
+import imageCompression from 'browser-image-compression';
+
+// Set worker for pdfjs
+if (typeof window !== 'undefined') {
+  (pdfjs as any).GlobalWorkerOptions.workerSrc = pdfWorker;
+}
+
+const generateId = () => {
+  if (typeof window !== 'undefined' && window.crypto && window.crypto.randomUUID) {
+    try {
+      return window.crypto.randomUUID();
+    } catch (e) {
+      // Fallback below
+    }
+  }
+  return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+};
+
+export async function extractPagesFromPdf(file: File, color: string): Promise<PageItem[]> {
+  const arrayBuffer = await file.arrayBuffer();
+  console.log(`Starting PDF extraction for: ${file.name} (${file.size} bytes)`);
+  
+  const pdf = await pdfjs.getDocument({ data: new Uint8Array(arrayBuffer) }).promise;
+  console.log(`PDF loaded successfully. Pages: ${pdf.numPages}`);
+  
+  const fileId = file.name + '-' + Date.now();
+  const results: PageItem[] = [];
+  
+  // Process in batches to avoid memory spikes and keep UI responsive
+  const BATCH_SIZE = 5;
+  for (let i = 0; i < pdf.numPages; i += BATCH_SIZE) {
+    const batch = Array.from({ length: Math.min(BATCH_SIZE, pdf.numPages - i) }, async (_, j) => {
+      const pageNum = i + j + 1;
+      const page = await pdf.getPage(pageNum);
+      const viewport = page.getViewport({ scale: 1.5 });
+      
+      // Use OffscreenCanvas if available for better performance
+      let canvas: HTMLCanvasElement | OffscreenCanvas;
+      if (typeof OffscreenCanvas !== 'undefined') {
+        canvas = new OffscreenCanvas(viewport.width, viewport.height);
+      } else {
+        canvas = document.createElement('canvas');
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
+      }
+      
+      const context = canvas.getContext('2d');
+      
+      if (context) {
+        await (page as any).render({ canvasContext: context, viewport }).promise;
+        
+        // Use WebP if supported for smaller thumbnails
+        let dataUrl: string;
+        if (canvas instanceof OffscreenCanvas) {
+          const blob = await canvas.convertToBlob({ type: 'image/webp', quality: 0.8 });
+          dataUrl = await new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result as string);
+            reader.readAsDataURL(blob);
+          });
+        } else {
+          dataUrl = canvas.toDataURL('image/webp', 0.8);
+          // Fallback to jpeg if webp failed (some older browsers)
+          if (dataUrl.startsWith('data:image/webp') === false) {
+            dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+          }
+        }
+        
+        return {
+          id: generateId(),
+          fileId: fileId,
+          originalFileName: file.name,
+          pageNumber: pageNum,
+          dataUrl,
+          rotation: 0,
+          adjustments: {
+            brightness: 100,
+            contrast: 100,
+            saturation: 100,
+          },
+          annotations: [],
+          color,
+        } as PageItem;
+      }
+      return null;
+    });
+    
+    const batchResults = await Promise.all(batch);
+    results.push(...batchResults.filter((p): p is PageItem => p !== null));
+  }
+
+  return results;
+}
+
+export async function processImageFile(file: File, color: string): Promise<PageItem> {
+  // Compress image before processing
+  const options = {
+    maxSizeMB: 1,
+    maxWidthOrHeight: 1920,
+    useWebWorker: true,
+  };
+  
+  try {
+    const compressedFile = await imageCompression(file, options);
+    const dataUrl = await imageCompression.getDataUrlFromFile(compressedFile);
+    
+    return {
+      id: generateId(),
+      fileId: file.name + '-' + Date.now(),
+      originalFileName: file.name,
+      pageNumber: 1,
+      dataUrl,
+      rotation: 0,
+      adjustments: {
+        brightness: 100,
+        contrast: 100,
+        saturation: 100,
+      },
+      annotations: [],
+      color,
+    };
+  } catch (error) {
+    console.error('Image compression failed:', error);
+    // Fallback to original file
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const dataUrl = e.target?.result as string;
+        resolve({
+          id: generateId(),
+          fileId: file.name + '-' + Date.now(),
+          originalFileName: file.name,
+          pageNumber: 1,
+          dataUrl,
+          rotation: 0,
+          adjustments: {
+            brightness: 100,
+            contrast: 100,
+            saturation: 100,
+          },
+          annotations: [],
+          color,
+        });
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+}
+
+function hexToRgb(hex: string) {
+  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  return result ? {
+    r: parseInt(result[1], 16) / 255,
+    g: parseInt(result[2], 16) / 255,
+    b: parseInt(result[3], 16) / 255
+  } : { r: 0, g: 0, b: 0 };
+}
+
+async function applyAdjustmentsToImage(pageItem: PageItem): Promise<string> {
+  // If no adjustments, no filters, and no annotations, return original dataUrl to save memory and avoid canvas issues
+  const hasAdjustments = pageItem.adjustments && (
+    (pageItem.adjustments.brightness !== undefined && pageItem.adjustments.brightness !== 100) || 
+    (pageItem.adjustments.contrast !== undefined && pageItem.adjustments.contrast !== 100) || 
+    (pageItem.adjustments.saturation !== undefined && pageItem.adjustments.saturation !== 100)
+  );
+  const hasFilter = pageItem.filter && pageItem.filter !== 'none';
+  const hasAnnotations = pageItem.annotations && pageItem.annotations.length > 0;
+
+  if (!hasAdjustments && !hasFilter && !hasAnnotations) {
+    return pageItem.dataUrl;
+  }
+
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        resolve(pageItem.dataUrl);
+        return;
+      }
+
+      canvas.width = img.width;
+      canvas.height = img.height;
+
+      // Apply filters
+      let filterStr = '';
+      if (pageItem.adjustments) {
+        filterStr += `brightness(${pageItem.adjustments.brightness ?? 100}%) `;
+        filterStr += `contrast(${pageItem.adjustments.contrast ?? 100}%) `;
+        filterStr += `saturate(${pageItem.adjustments.saturation ?? 100}%) `;
+      }
+      
+      if (pageItem.filter === 'grayscale') filterStr += 'grayscale(100%) ';
+      if (pageItem.filter === 'sepia') filterStr += 'sepia(100%) ';
+      if (pageItem.filter === 'invert') filterStr += 'invert(100%) ';
+      
+      if (filterStr.trim()) {
+        ctx.filter = filterStr.trim();
+      }
+      
+      ctx.drawImage(img, 0, 0);
+      
+      // Reset filter for annotations
+      ctx.filter = 'none';
+      
+      // Draw annotations
+      pageItem.annotations?.forEach(anno => {
+        const x = (anno.x / 100) * canvas.width;
+        const y = (anno.y / 100) * canvas.height;
+        
+        ctx.save();
+        if (anno.rotation) {
+          ctx.translate(x, y);
+          ctx.rotate((anno.rotation * Math.PI) / 180);
+          ctx.translate(-x, -y);
+        }
+
+        if (anno.type === 'rect') {
+          const w = (anno.width! / 100) * canvas.width;
+          const h = (anno.height! / 100) * canvas.height;
+          ctx.fillStyle = anno.color;
+          ctx.fillRect(x, y, w, h);
+        } else if (anno.type === 'text') {
+          ctx.fillStyle = anno.color;
+          ctx.font = `bold ${anno.fontSize}px Arial`;
+          ctx.textBaseline = 'top';
+          ctx.fillText(anno.text || '', x, y);
+        } else if (anno.type === 'image' && anno.image) {
+          // Image annotations would need to be loaded as well, but for now we skip or use a placeholder
+          // In a real app, we'd wait for all annotation images to load
+        }
+        ctx.restore();
+      });
+      
+      try {
+        resolve(canvas.toDataURL('image/jpeg', 0.95));
+      } catch (e) {
+        console.error('Canvas toDataURL failed:', e);
+        resolve(pageItem.dataUrl);
+      }
+    };
+    img.onerror = () => {
+      console.error('Failed to load image for adjustments');
+      resolve(pageItem.dataUrl);
+    };
+    img.src = pageItem.dataUrl;
+  });
+}
+
+export async function generatePdfFromPages(pages: PageItem[]): Promise<Uint8Array> {
+  const pdfDoc = await PDFDocument.create();
+  
+  for (const pageItem of pages) {
+    // Apply adjustments before embedding
+    const adjustedDataUrl = await applyAdjustmentsToImage(pageItem);
+    
+    // Manual conversion of data URL to ArrayBuffer to avoid fetch restrictions
+    const base64Data = adjustedDataUrl.split(',')[1];
+    const binaryString = atob(base64Data);
+    const bytes = new Uint8Array(binaryString.length);
+    for (let i = 0; i < binaryString.length; i++) {
+      bytes[i] = binaryString.charCodeAt(i);
+    }
+    const imageBytes = bytes.buffer;
+
+    let image;
+    
+    if (adjustedDataUrl.startsWith('data:image/jpeg')) {
+      image = await pdfDoc.embedJpg(imageBytes);
+    } else {
+      image = await pdfDoc.embedPng(imageBytes);
+    }
+
+    // UI rotation is clockwise, pdf-lib rotation is counter-clockwise
+    const rotationCW = ((pageItem.rotation % 360) + 360) % 360;
+    const rotationCCW = (360 - rotationCW) % 360;
+    
+    const isVertical = rotationCW === 90 || rotationCW === 270;
+    
+    const pageWidth = isVertical ? image.height : image.width;
+    const pageHeight = isVertical ? image.width : image.height;
+    
+    const page = pdfDoc.addPage([pageWidth, pageHeight]);
+    
+    let x = 0;
+    let y = 0;
+    
+    // Calculate position based on CCW rotation around bottom-left corner of the image
+    if (rotationCCW === 90) {
+      x = image.height;
+    } else if (rotationCCW === 180) {
+      x = image.width;
+      y = image.height;
+    } else if (rotationCCW === 270) {
+      y = image.width;
+    }
+    
+    page.drawImage(image, {
+      x,
+      y,
+      width: image.width,
+      height: image.height,
+      rotate: degrees(rotationCCW),
+    });
+  }
+  
+  return await pdfDoc.save();
+}
+
+export const FILE_COLORS = [
+  '#3b82f6', // blue
+  '#ef4444', // red
+  '#10b981', // emerald
+  '#f59e0b', // amber
+  '#8b5cf6', // violet
+  '#ec4899', // pink
+  '#06b6d4', // cyan
+];
