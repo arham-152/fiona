@@ -55,6 +55,7 @@ export const OrganizerGrid: React.FC<OrganizerGridProps> = ({
   isDarkMode,
   onSetTheme,
 }) => {
+  const [showMobileFiles, setShowMobileFiles] = React.useState(false);
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
@@ -121,20 +122,6 @@ export const OrganizerGrid: React.FC<OrganizerGridProps> = ({
         </div>
         
         <div className="flex items-center gap-2 sm:gap-4">
-          <button 
-            onClick={onDownload}
-            disabled={isProcessing || pages.length === 0}
-            className={clsx(
-              "lg:hidden flex items-center gap-2 px-3 py-1.5 rounded-lg font-black text-[10px] transition-all border uppercase tracking-widest",
-              isProcessing || pages.length === 0
-                ? "bg-gray-50 dark:bg-brand-900 text-gray-300 border-gray-100 dark:border-brand-800"
-                : "bg-brand-600 text-white border-brand-500 shadow-lg shadow-brand-600/20"
-            )}
-          >
-            {isProcessing ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
-            <span>PDF</span>
-          </button>
-
           <button 
             onClick={onClearAll}
             className="flex items-center gap-2 px-3 py-1.5 bg-red-600/5 hover:bg-red-600/10 text-red-600 rounded-lg font-black text-[10px] transition-all border border-red-600/10 uppercase tracking-widest"
@@ -322,6 +309,113 @@ export const OrganizerGrid: React.FC<OrganizerGridProps> = ({
           </div>
         </aside>
       </div>
+
+      {/* Mobile Bottom Bar - lg and below */}
+      <div className="lg:hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-[60] flex items-center gap-3 px-4 py-3 bg-white/90 dark:bg-brand-950/90 backdrop-blur-xl border border-gray-200 dark:border-brand-800 rounded-full shadow-2xl w-[90%] max-w-md">
+        <button 
+          onClick={() => setShowMobileFiles(true)}
+          className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-brand-50 dark:bg-brand-900 text-brand-600 dark:text-brand-400 rounded-full font-black text-[10px] transition-all border border-brand-100 dark:border-brand-800 uppercase tracking-widest shadow-sm"
+        >
+          <FileText size={16} />
+          <span>FILES</span>
+        </button>
+
+        <div className="w-px h-6 bg-gray-200 dark:bg-brand-800" />
+
+        <button 
+          onClick={onDownload}
+          disabled={isProcessing || pages.length === 0}
+          className={clsx(
+            "flex-[2] flex items-center justify-center gap-2 px-6 py-3 rounded-full font-black text-[10px] transition-all border uppercase tracking-widest shadow-lg",
+            isProcessing || pages.length === 0
+              ? "bg-gray-50 dark:bg-brand-900 text-gray-300 border-gray-100 dark:border-brand-800"
+              : "bg-brand-600 text-white border-brand-500 shadow-brand-600/20"
+          )}
+        >
+          {isProcessing ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
+          <span>DOWNLOAD PDF</span>
+        </button>
+      </div>
+
+      {/* Mobile File List Overlay */}
+      <AnimatePresence>
+        {showMobileFiles && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm lg:hidden"
+            onClick={() => setShowMobileFiles(false)}
+          >
+            <motion.div
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+              className="absolute right-0 top-0 bottom-0 w-80 bg-white dark:bg-brand-950 flex flex-col shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="p-6 border-b border-gray-100 dark:border-brand-800 flex items-center justify-between">
+                <h3 className="text-[10px] font-black text-gray-400 dark:text-brand-600 uppercase tracking-[0.2em]">Source Files</h3>
+                <button 
+                  onClick={() => setShowMobileFiles(false)}
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-brand-900 text-gray-500 rounded-lg transition-colors"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+              
+              <div className="flex-1 overflow-y-auto p-6 custom-scrollbar">
+                <div className="space-y-6">
+                  <DndContext
+                    sensors={sensors}
+                    collisionDetection={closestCenter}
+                    onDragEnd={handleFileDragEnd}
+                  >
+                    <SortableContext items={fileIds} strategy={horizontalListSortingStrategy}>
+                      <div className="flex flex-col gap-2">
+                        {fileIds.map((fileId) => {
+                          const firstPage = pages.find(p => p.fileId === fileId);
+                          const filePages = pages.filter(p => p.fileId === fileId);
+                          return (
+                            <FileItem 
+                              key={fileId}
+                              fileId={fileId}
+                              color={firstPage?.color || '#4f46e5'}
+                              name={firstPage?.originalFileName || 'Unknown'}
+                              count={filePages.length}
+                              onDelete={handleDeleteFile}
+                            />
+                          );
+                        })}
+                      </div>
+                    </SortableContext>
+                  </DndContext>
+                </div>
+              </div>
+
+              <div className="p-6 border-t border-gray-100 dark:border-brand-800">
+                <button 
+                  onClick={() => {
+                    onDownload();
+                    setShowMobileFiles(false);
+                  }}
+                  disabled={isProcessing || pages.length === 0}
+                  className={clsx(
+                    "w-full flex items-center justify-center gap-3 px-6 py-4 rounded-[20px] font-black text-xs transition-all shadow-xl active:scale-[0.98] uppercase tracking-[0.2em] border",
+                    isProcessing || pages.length === 0
+                      ? "bg-gray-50 dark:bg-brand-900 text-gray-300 border-gray-100 dark:border-brand-800 cursor-not-allowed"
+                      : "bg-brand-600 hover:bg-brand-700 text-white shadow-brand-600/20 border-brand-500"
+                  )}
+                >
+                  {isProcessing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download size={18} />}
+                  <span>DOWNLOAD PDF</span>
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

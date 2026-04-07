@@ -482,11 +482,11 @@ export const EditorModal: React.FC<EditorModalProps> = ({
         </div>
 
         {/* Main Editor Area */}
-        <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
+        <div className="flex-1 flex flex-col lg:flex-row overflow-y-auto lg:overflow-hidden custom-scrollbar bg-gray-50">
           {/* Left: Image Preview / Cropper */}
           <div className={clsx(
-            "flex-1 relative bg-gray-50 flex items-center justify-center group p-2 sm:p-4",
-            isCropping ? "overflow-hidden bg-zinc-900" : "overflow-auto custom-scrollbar"
+            "shrink-0 lg:flex-1 relative bg-gray-50 flex items-center justify-center group p-2 sm:p-4 min-h-[45vh] lg:min-h-0",
+            isCropping ? "overflow-hidden bg-zinc-900" : "lg:overflow-auto custom-scrollbar"
           )}>
             {isCropping ? (
               <div className="relative w-full h-full flex flex-col bg-zinc-900 overflow-hidden">
@@ -859,8 +859,8 @@ export const EditorModal: React.FC<EditorModalProps> = ({
           </div>
 
           {/* Right: Sidebar Controls - Unified Frame */}
-          <div className="w-full lg:w-80 border-t lg:border-t-0 lg:border-l border-gray-100 bg-white flex flex-col overflow-hidden">
-            <div className="flex-1 p-4 sm:p-6 space-y-8 overflow-y-auto custom-scrollbar">
+          <div className="shrink-0 lg:flex-none lg:w-80 border-t lg:border-t-0 lg:border-l border-gray-100 bg-white flex flex-col lg:overflow-hidden">
+            <div className="flex-1 p-4 sm:p-6 space-y-8 lg:overflow-y-auto custom-scrollbar">
               {/* TRANSFORM SECTION */}
               <div className="space-y-4">
                 <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Transform</label>

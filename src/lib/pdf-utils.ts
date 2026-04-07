@@ -24,9 +24,10 @@ const generateId = () => {
 
 export async function extractPagesFromPdf(file: File, color: string): Promise<PageItem[]> {
   const arrayBuffer = await file.arrayBuffer();
+  const sourcePdfBuffer = new Uint8Array(arrayBuffer);
   console.log(`Starting PDF extraction for: ${file.name} (${file.size} bytes)`);
   
-  const pdf = await pdfjs.getDocument({ data: new Uint8Array(arrayBuffer) }).promise;
+  const pdf = await pdfjs.getDocument({ data: sourcePdfBuffer }).promise;
   console.log(`PDF loaded successfully. Pages: ${pdf.numPages}`);
   
   const fileId = file.name + '-' + Date.now();
@@ -38,7 +39,7 @@ export async function extractPagesFromPdf(file: File, color: string): Promise<Pa
     const batch = Array.from({ length: Math.min(BATCH_SIZE, pdf.numPages - i) }, async (_, j) => {
       const pageNum = i + j + 1;
       const page = await pdf.getPage(pageNum);
-      const viewport = page.getViewport({ scale: 1.5 });
+      const viewport = page.getViewport({ scale: 2.0 }); // Higher scale for better UI preview
       
       // Use OffscreenCanvas if available for better performance
       let canvas: HTMLCanvasElement | OffscreenCanvas;
@@ -55,17 +56,17 @@ export async function extractPagesFromPdf(file: File, color: string): Promise<Pa
       if (context) {
         await (page as any).render({ canvasContext: context, viewport }).promise;
         
-        // Use JPEG for better compatibility with pdf-lib
+        // Use JPEG for better compatibility with pdf-lib, but at high quality
         let dataUrl: string;
         if (canvas instanceof OffscreenCanvas) {
-          const blob = await canvas.convertToBlob({ type: 'image/jpeg', quality: 0.8 });
+          const blob = await canvas.convertToBlob({ type: 'image/jpeg', quality: 0.95 });
           dataUrl = await new Promise((resolve) => {
             const reader = new FileReader();
             reader.onloadend = () => resolve(reader.result as string);
             reader.readAsDataURL(blob);
           });
         } else {
-          dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+          dataUrl = canvas.toDataURL('image/jpeg', 0.95);
         }
         
         return {
@@ -82,6 +83,7 @@ export async function extractPagesFromPdf(file: File, color: string): Promise<Pa
           },
           annotations: [],
           color,
+          sourcePdfBuffer, // Store reference to original PDF buffer
         } as PageItem;
       }
       return null;
@@ -95,10 +97,10 @@ export async function extractPagesFromPdf(file: File, color: string): Promise<Pa
 }
 
 export async function processImageFile(file: File, color: string): Promise<PageItem> {
-  // Compress image before processing
+  // Use high quality for images
   const options = {
-    maxSizeMB: 1,
-    maxWidthOrHeight: 1920,
+    maxSizeMB: 5, // Increased from 1
+    maxWidthOrHeight: 4096, // Increased from 1920
     useWebWorker: true,
   };
   
@@ -261,8 +263,40 @@ async function applyAdjustmentsToImage(pageItem: PageItem): Promise<string> {
 export async function generatePdfFromPages(pages: PageItem[]): Promise<Uint8Array> {
   const pdfDoc = await PDFDocument.create();
   
+  // Cache for loaded PDF documents to avoid re-loading same buffer
+  const loadedPdfs = new Map<Uint8Array, PDFDocument>();
+
   for (const pageItem of pages) {
-    // Apply adjustments before embedding
+    // Check if we can use the original PDF page (no crop, no adjustments, no filters, no annotations)
+    const hasAdjustments = pageItem.adjustments && (
+      (pageItem.adjustments.brightness !== undefined && pageItem.adjustments.brightness !== 100) || 
+      (pageItem.adjustments.contrast !== undefined && pageItem.adjustments.contrast !== 100) || 
+      (pageItem.adjustments.saturation !== undefined && pageItem.adjustments.saturation !== 100)
+    );
+    const hasFilter = pageItem.filter && pageItem.filter !== 'none';
+    const hasAnnotations = pageItem.annotations && pageItem.annotations.length > 0;
+    const hasCrop = !!pageItem.crop;
+
+    if (pageItem.sourcePdfBuffer && !hasAdjustments && !hasFilter && !hasAnnotations && !hasCrop) {
+      // 100% Quality: Copy original PDF page
+      let sourceDoc = loadedPdfs.get(pageItem.sourcePdfBuffer);
+      if (!sourceDoc) {
+        sourceDoc = await PDFDocument.load(pageItem.sourcePdfBuffer);
+        loadedPdfs.set(pageItem.sourcePdfBuffer, sourceDoc);
+      }
+      
+      const [copiedPage] = await pdfDoc.copyPages(sourceDoc, [pageItem.pageNumber - 1]);
+      
+      // Handle rotation (pdf-lib uses degrees)
+      if (pageItem.rotation !== 0) {
+        copiedPage.setRotation(degrees(pageItem.rotation));
+      }
+      
+      pdfDoc.addPage(copiedPage);
+      continue;
+    }
+
+    // Otherwise, render to high-quality image and embed
     const adjustedDataUrl = await applyAdjustmentsToImage(pageItem);
     
     // Manual conversion of data URL to ArrayBuffer to avoid fetch restrictions

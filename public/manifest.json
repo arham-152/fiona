@@ -8,12 +8,12 @@
   "theme_color": "#4f46e5",
   "icons": [
     {
-      "src": "https://fastly.mwm-storage.mwmcdn.com/raw_files/a23e3c07-b82b-4da8-a57f-cabf6b0c0ed2?height=640&format=webp",
+      "src": "https://picsum.photos/seed/pdf/192/192",
       "sizes": "192x192",
       "type": "image/png"
     },
     {
-      "src": "https://fastly.mwm-storage.mwmcdn.com/raw_files/a23e3c07-b82b-4da8-a57f-cabf6b0c0ed2?height=640&format=webp",
+      "src": "https://picsum.photos/seed/pdf/512/512",
       "sizes": "512x512",
       "type": "image/png"
     }

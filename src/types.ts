@@ -19,6 +19,7 @@ export interface PageItem {
   filter?: 'none' | 'grayscale' | 'punch' | 'golden' | 'radiate' | 'warm-contrast' | 'calm' | 'cool-light' | 'vivid-cool' | 'dramatic-cool';
   annotations?: Annotation[];
   color: string; // For grouping/marking
+  sourcePdfBuffer?: Uint8Array; // Original PDF data for high-quality export
 }
 
 export interface Annotation {
