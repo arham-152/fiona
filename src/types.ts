@@ -16,7 +16,7 @@ export interface PageItem {
     contrast: number;
     saturation: number;
   };
-  filter?: 'none' | 'grayscale' | 'sepia' | 'invert';
+  filter?: 'none' | 'grayscale' | 'punch' | 'golden' | 'radiate' | 'warm-contrast' | 'calm' | 'cool-light' | 'vivid-cool' | 'dramatic-cool';
   annotations?: Annotation[];
   color: string; // For grouping/marking
 }

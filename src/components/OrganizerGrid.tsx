@@ -120,13 +120,28 @@ export const OrganizerGrid: React.FC<OrganizerGridProps> = ({
           </div>
         </div>
         
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2 sm:gap-4">
+          <button 
+            onClick={onDownload}
+            disabled={isProcessing || pages.length === 0}
+            className={clsx(
+              "lg:hidden flex items-center gap-2 px-3 py-1.5 rounded-lg font-black text-[10px] transition-all border uppercase tracking-widest",
+              isProcessing || pages.length === 0
+                ? "bg-gray-50 dark:bg-brand-900 text-gray-300 border-gray-100 dark:border-brand-800"
+                : "bg-brand-600 text-white border-brand-500 shadow-lg shadow-brand-600/20"
+            )}
+          >
+            {isProcessing ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
+            <span>PDF</span>
+          </button>
+
           <button 
             onClick={onClearAll}
             className="flex items-center gap-2 px-3 py-1.5 bg-red-600/5 hover:bg-red-600/10 text-red-600 rounded-lg font-black text-[10px] transition-all border border-red-600/10 uppercase tracking-widest"
           >
             <X size={14} />
-            CLEAR ALL
+            <span className="hidden sm:inline">CLEAR ALL</span>
+            <span className="sm:hidden">CLEAR</span>
           </button>
           
           <div className="w-px h-6 bg-gray-200 dark:bg-brand-800" />

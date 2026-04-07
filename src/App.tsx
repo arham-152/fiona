@@ -160,7 +160,7 @@ export default function App() {
           )}
         </AnimatePresence>
 
-        <div className="fixed top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[600px] bg-brand-600/5 blur-[120px] pointer-events-none -z-10" />
+        <div className="fixed top-0 left-1/2 -translate-x-1/2 w-full max-w-[1000px] h-[600px] bg-brand-600/5 blur-[120px] pointer-events-none -z-10" />
 
         <main className="min-h-screen flex flex-col">
           {pages.length === 0 ? (

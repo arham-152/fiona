@@ -54,7 +54,17 @@ export const PageCard: React.FC<PageCardProps> = React.memo(({ page, onEdit, onD
             className="w-full h-full object-cover"
             loading="lazy"
             style={{ 
-              filter: `brightness(${page.adjustments.brightness}%) contrast(${page.adjustments.contrast}%) saturate(${page.adjustments.saturation}%)`
+              filter: `brightness(${page.adjustments.brightness}%) contrast(${page.adjustments.contrast}%) saturate(${page.adjustments.saturation}%) ${
+                page.filter === 'grayscale' ? 'grayscale(100%)' : 
+                page.filter === 'punch' ? 'contrast(120%) saturate(120%)' :
+                page.filter === 'golden' ? 'sepia(30%) saturate(140%) brightness(110%)' :
+                page.filter === 'radiate' ? 'brightness(115%) saturate(130%)' :
+                page.filter === 'warm-contrast' ? 'sepia(10%) contrast(110%) saturate(110%)' :
+                page.filter === 'calm' ? 'saturate(80%) brightness(105%)' :
+                page.filter === 'cool-light' ? 'hue-rotate(10deg) saturate(90%) brightness(110%)' :
+                page.filter === 'vivid-cool' ? 'saturate(140%) hue-rotate(10deg)' :
+                page.filter === 'dramatic-cool' ? 'contrast(130%) hue-rotate(20deg) saturate(80%)' : ''
+              }`
             }}
             referrerPolicy="no-referrer"
           />

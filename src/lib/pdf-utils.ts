@@ -55,21 +55,17 @@ export async function extractPagesFromPdf(file: File, color: string): Promise<Pa
       if (context) {
         await (page as any).render({ canvasContext: context, viewport }).promise;
         
-        // Use WebP if supported for smaller thumbnails
+        // Use JPEG for better compatibility with pdf-lib
         let dataUrl: string;
         if (canvas instanceof OffscreenCanvas) {
-          const blob = await canvas.convertToBlob({ type: 'image/webp', quality: 0.8 });
+          const blob = await canvas.convertToBlob({ type: 'image/jpeg', quality: 0.8 });
           dataUrl = await new Promise((resolve) => {
             const reader = new FileReader();
             reader.onloadend = () => resolve(reader.result as string);
             reader.readAsDataURL(blob);
           });
         } else {
-          dataUrl = canvas.toDataURL('image/webp', 0.8);
-          // Fallback to jpeg if webp failed (some older browsers)
-          if (dataUrl.startsWith('data:image/webp') === false) {
-            dataUrl = canvas.toDataURL('image/jpeg', 0.8);
-          }
+          dataUrl = canvas.toDataURL('image/jpeg', 0.8);
         }
         
         return {
@@ -200,8 +196,14 @@ async function applyAdjustmentsToImage(pageItem: PageItem): Promise<string> {
       }
       
       if (pageItem.filter === 'grayscale') filterStr += 'grayscale(100%) ';
-      if (pageItem.filter === 'sepia') filterStr += 'sepia(100%) ';
-      if (pageItem.filter === 'invert') filterStr += 'invert(100%) ';
+      if (pageItem.filter === 'punch') filterStr += 'contrast(120%) saturate(120%) ';
+      if (pageItem.filter === 'golden') filterStr += 'sepia(30%) saturate(140%) brightness(110%) ';
+      if (pageItem.filter === 'radiate') filterStr += 'brightness(115%) saturate(130%) ';
+      if (pageItem.filter === 'warm-contrast') filterStr += 'sepia(10%) contrast(110%) saturate(110%) ';
+      if (pageItem.filter === 'calm') filterStr += 'saturate(80%) brightness(105%) ';
+      if (pageItem.filter === 'cool-light') filterStr += 'hue-rotate(10deg) saturate(90%) brightness(110%) ';
+      if (pageItem.filter === 'vivid-cool') filterStr += 'saturate(140%) hue-rotate(10deg) ';
+      if (pageItem.filter === 'dramatic-cool') filterStr += 'contrast(130%) hue-rotate(20deg) saturate(80%) ';
       
       if (filterStr.trim()) {
         ctx.filter = filterStr.trim();

@@ -518,7 +518,17 @@ export const EditorModal: React.FC<EditorModalProps> = ({
                         style={{ 
                           transform: `rotate(${editedPage.rotation}deg)`,
                           transformOrigin: 'center center',
-                          filter: `brightness(${editedPage.adjustments.brightness}%) contrast(${editedPage.adjustments.contrast}%) saturate(${editedPage.adjustments.saturation}%) ${editedPage.filter === 'grayscale' ? 'grayscale(100%)' : editedPage.filter === 'sepia' ? 'sepia(100%)' : editedPage.filter === 'invert' ? 'invert(100%)' : ''}`
+                          filter: `brightness(${editedPage.adjustments.brightness}%) contrast(${editedPage.adjustments.contrast}%) saturate(${editedPage.adjustments.saturation}%) ${
+                            editedPage.filter === 'grayscale' ? 'grayscale(100%)' : 
+                            editedPage.filter === 'punch' ? 'contrast(120%) saturate(120%)' :
+                            editedPage.filter === 'golden' ? 'sepia(30%) saturate(140%) brightness(110%)' :
+                            editedPage.filter === 'radiate' ? 'brightness(115%) saturate(130%)' :
+                            editedPage.filter === 'warm-contrast' ? 'sepia(10%) contrast(110%) saturate(110%)' :
+                            editedPage.filter === 'calm' ? 'saturate(80%) brightness(105%)' :
+                            editedPage.filter === 'cool-light' ? 'hue-rotate(10deg) saturate(90%) brightness(110%)' :
+                            editedPage.filter === 'vivid-cool' ? 'saturate(140%) hue-rotate(10deg)' :
+                            editedPage.filter === 'dramatic-cool' ? 'contrast(130%) hue-rotate(20deg) saturate(80%)' : ''
+                          }`
                         }}
                       />
                     </ReactCrop>
@@ -621,7 +631,17 @@ export const EditorModal: React.FC<EditorModalProps> = ({
                         isFitToScreen ? "max-w-full max-h-full" : "w-auto h-auto"
                       )}
                       style={{ 
-                        filter: `brightness(${editedPage.adjustments.brightness}%) contrast(${editedPage.adjustments.contrast}%) saturate(${editedPage.adjustments.saturation}%) ${editedPage.filter === 'grayscale' ? 'grayscale(100%)' : editedPage.filter === 'sepia' ? 'sepia(100%)' : editedPage.filter === 'invert' ? 'invert(100%)' : ''}`
+                        filter: `brightness(${editedPage.adjustments.brightness}%) contrast(${editedPage.adjustments.contrast}%) saturate(${editedPage.adjustments.saturation}%) ${
+                          editedPage.filter === 'grayscale' ? 'grayscale(100%)' : 
+                          editedPage.filter === 'punch' ? 'contrast(120%) saturate(120%)' :
+                          editedPage.filter === 'golden' ? 'sepia(30%) saturate(140%) brightness(110%)' :
+                          editedPage.filter === 'radiate' ? 'brightness(115%) saturate(130%)' :
+                          editedPage.filter === 'warm-contrast' ? 'sepia(10%) contrast(110%) saturate(110%)' :
+                          editedPage.filter === 'calm' ? 'saturate(80%) brightness(105%)' :
+                          editedPage.filter === 'cool-light' ? 'hue-rotate(10deg) saturate(90%) brightness(110%)' :
+                          editedPage.filter === 'vivid-cool' ? 'saturate(140%) hue-rotate(10deg)' :
+                          editedPage.filter === 'dramatic-cool' ? 'contrast(130%) hue-rotate(20deg) saturate(80%)' : ''
+                        }`
                       }}
                       referrerPolicy="no-referrer"
                     />
@@ -1027,12 +1047,18 @@ export const EditorModal: React.FC<EditorModalProps> = ({
 
                 <div className="space-y-3">
                   <label className="text-[10px] text-gray-400 block mb-1 uppercase tracking-widest font-bold">Filters</label>
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                     {[
-                      { label: 'None', value: 'none' },
+                      { label: 'Original', value: 'none' },
                       { label: 'Grayscale', value: 'grayscale' },
-                      { label: 'Sepia', value: 'sepia' },
-                      { label: 'Invert', value: 'invert' },
+                      { label: 'Punch', value: 'punch' },
+                      { label: 'Golden', value: 'golden' },
+                      { label: 'Radiate', value: 'radiate' },
+                      { label: 'Warm Contrast', value: 'warm-contrast' },
+                      { label: 'Calm', value: 'calm' },
+                      { label: 'Cool Light', value: 'cool-light' },
+                      { label: 'Vivid Cool', value: 'vivid-cool' },
+                      { label: 'Dramatic Cool', value: 'dramatic-cool' },
                     ].map((f) => (
                       <button
                         key={f.value}
