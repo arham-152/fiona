@@ -110,6 +110,12 @@ export const OrganizerGrid: React.FC<OrganizerGridProps> = ({
       {/* Global Header - Fixed at the top */}
       <header className="flex items-center justify-between px-6 py-3 border-b border-gray-200 dark:border-brand-800 bg-white dark:bg-brand-950 z-50 w-full shadow-sm">
         <div className="flex items-center gap-4">
+          <img 
+            src="https://storage.googleapis.com/static-content-ais/ais-dev-guci33aws6znemhwdf727f-579661047554.asia-southeast1.run.app/user_uploads/logo.png" 
+            alt="Logo" 
+            className="w-10 h-10 object-contain"
+            referrerPolicy="no-referrer"
+          />
           <div className="flex flex-col">
             <h1 className="text-lg font-black text-gray-900 dark:text-white uppercase tracking-tight leading-none">Document Organizer</h1>
             <span className="text-[9px] font-bold text-brand-600 dark:text-brand-500 tracking-[0.3em] uppercase mt-1">PDF EDITOR PRO</span>

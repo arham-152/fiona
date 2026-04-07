@@ -39,7 +39,7 @@ export async function extractPagesFromPdf(file: File, color: string): Promise<Pa
     const batch = Array.from({ length: Math.min(BATCH_SIZE, pdf.numPages - i) }, async (_, j) => {
       const pageNum = i + j + 1;
       const page = await pdf.getPage(pageNum);
-      const viewport = page.getViewport({ scale: 2.0 }); // Higher scale for better UI preview
+      const viewport = page.getViewport({ scale: 4.0 }); // Ultra-high scale for crisp previews
       
       // Use OffscreenCanvas if available for better performance
       let canvas: HTMLCanvasElement | OffscreenCanvas;
@@ -56,17 +56,17 @@ export async function extractPagesFromPdf(file: File, color: string): Promise<Pa
       if (context) {
         await (page as any).render({ canvasContext: context, viewport }).promise;
         
-        // Use JPEG for better compatibility with pdf-lib, but at high quality
+        // Use JPEG for better compatibility with pdf-lib, but at maximum quality
         let dataUrl: string;
         if (canvas instanceof OffscreenCanvas) {
-          const blob = await canvas.convertToBlob({ type: 'image/jpeg', quality: 0.95 });
+          const blob = await canvas.convertToBlob({ type: 'image/jpeg', quality: 1.0 });
           dataUrl = await new Promise((resolve) => {
             const reader = new FileReader();
             reader.onloadend = () => resolve(reader.result as string);
             reader.readAsDataURL(blob);
           });
         } else {
-          dataUrl = canvas.toDataURL('image/jpeg', 0.95);
+          dataUrl = canvas.toDataURL('image/jpeg', 1.0);
         }
         
         return {
@@ -97,10 +97,10 @@ export async function extractPagesFromPdf(file: File, color: string): Promise<Pa
 }
 
 export async function processImageFile(file: File, color: string): Promise<PageItem> {
-  // Use high quality for images
+  // Use ultra-high quality for images
   const options = {
-    maxSizeMB: 5, // Increased from 1
-    maxWidthOrHeight: 4096, // Increased from 1920
+    maxSizeMB: 10, // Increased from 5
+    maxWidthOrHeight: 8192, // Increased from 4096 (8K support)
     useWebWorker: true,
   };
   
@@ -246,7 +246,7 @@ async function applyAdjustmentsToImage(pageItem: PageItem): Promise<string> {
       });
       
       try {
-        resolve(canvas.toDataURL('image/jpeg', 0.95));
+        resolve(canvas.toDataURL('image/jpeg', 1.0)); // Maximum quality
       } catch (e) {
         console.error('Canvas toDataURL failed:', e);
         resolve(pageItem.dataUrl);

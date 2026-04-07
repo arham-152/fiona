@@ -436,9 +436,12 @@ export const EditorModal: React.FC<EditorModalProps> = ({
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-100 bg-white">
           <div className="flex items-center gap-4">
-            <div className="w-10 h-10 rounded-xl bg-brand-600/10 flex items-center justify-center text-brand-600">
-              <FileText size={24} />
-            </div>
+            <img 
+              src="https://storage.googleapis.com/static-content-ais/ais-dev-guci33aws6znemhwdf727f-579661047554.asia-southeast1.run.app/user_uploads/logo.png" 
+              alt="Logo" 
+              className="w-10 h-10 object-contain"
+              referrerPolicy="no-referrer"
+            />
             <div>
               <h3 className="text-lg font-black text-gray-900 uppercase tracking-tight">Edit Page {page.pageNumber}</h3>
               <p className="text-xs text-gray-500 font-medium">Customize and annotate your document page</p>

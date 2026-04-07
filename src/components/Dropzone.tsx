@@ -62,8 +62,14 @@ export const Dropzone: React.FC<DropzoneProps> = ({ onFilesAdded, isDarkMode, on
       </div>
 
       {/* Tool Selector Bar */}
-      <div className="mb-12 w-full max-w-md">
-        <div className="flex items-center justify-between p-3 bg-white dark:bg-brand-800 border border-gray-100 dark:border-brand-700 rounded-full shadow-sm">
+      <div className="mb-12 w-full max-w-md flex flex-col items-center gap-8">
+        <img 
+          src="https://storage.googleapis.com/static-content-ais/ais-dev-guci33aws6znemhwdf727f-579661047554.asia-southeast1.run.app/user_uploads/logo.png" 
+          alt="Logo" 
+          className="w-24 h-24 object-contain shadow-2xl rounded-full bg-white p-2"
+          referrerPolicy="no-referrer"
+        />
+        <div className="flex items-center justify-between p-3 bg-white dark:bg-brand-800 border border-gray-100 dark:border-brand-700 rounded-full shadow-sm w-full">
           <div className="flex items-center gap-4">
             <div className="p-3 bg-brand-600/10 dark:bg-brand-600/20 text-brand-600 dark:text-brand-400 rounded-full">
               <LayoutGrid size={24} />
