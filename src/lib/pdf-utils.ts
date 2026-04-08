@@ -25,10 +25,8 @@ const generateId = () => {
 export async function extractPagesFromPdf(file: File, color: string): Promise<PageItem[]> {
   const arrayBuffer = await file.arrayBuffer();
   const sourcePdfBuffer = new Uint8Array(arrayBuffer);
-  console.log(`Starting PDF extraction for: ${file.name} (${file.size} bytes)`);
   
   const pdf = await pdfjs.getDocument({ data: sourcePdfBuffer }).promise;
-  console.log(`PDF loaded successfully. Pages: ${pdf.numPages}`);
   
   const fileId = file.name + '-' + Date.now();
   const results: PageItem[] = [];

@@ -11,6 +11,7 @@ interface DropzoneProps {
 }
 
 export const Dropzone: React.FC<DropzoneProps> = ({ onFilesAdded, isDarkMode, onSetTheme }) => {
+  const [logoError, setLogoError] = React.useState(false);
   const onDrop = useCallback((acceptedFiles: File[]) => {
     onFilesAdded(acceptedFiles);
   }, [onFilesAdded]);
@@ -64,15 +65,16 @@ export const Dropzone: React.FC<DropzoneProps> = ({ onFilesAdded, isDarkMode, on
       {/* Tool Selector Bar */}
       <div className="mb-12 w-full max-w-md flex flex-col items-center gap-8">
         <div className="w-24 h-24 flex items-center justify-center bg-white rounded-full overflow-hidden shadow-2xl p-2 border-none leading-[17px] text-[14px]">
-          <img 
-            src="/—Pngtree—doc file document icon_4175858.png" 
-            alt="Logo" 
-            className="w-full h-full object-contain"
-            onError={(e) => {
-              (e.target as HTMLImageElement).style.display = 'none';
-              (e.target as HTMLImageElement).parentElement!.innerHTML = '<div class="text-brand-600 font-black text-xl">DOC</div>';
-            }}
-          />
+          {logoError ? (
+            <div className="text-brand-600 font-black text-xl">DOC</div>
+          ) : (
+            <img 
+              src="/logo.png" 
+              alt="Logo" 
+              className="w-full h-full object-contain"
+              onError={() => setLogoError(true)}
+            />
+          )}
         </div>
         <div className="flex items-center justify-between p-3 bg-white dark:bg-brand-800 border border-gray-100 dark:border-brand-700 rounded-full shadow-sm w-full">
           <div className="flex items-center gap-4">

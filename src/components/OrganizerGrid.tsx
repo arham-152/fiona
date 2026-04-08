@@ -13,7 +13,7 @@ import {
   SortableContext,
   sortableKeyboardCoordinates,
   rectSortingStrategy,
-  horizontalListSortingStrategy,
+  verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { PageItem } from '../types';
 import { PageCard } from './PageCard';
@@ -55,6 +55,7 @@ export const OrganizerGrid: React.FC<OrganizerGridProps> = ({
   isDarkMode,
   onSetTheme,
 }) => {
+  const [logoError, setLogoError] = React.useState(false);
   const [showMobileFiles, setShowMobileFiles] = React.useState(false);
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -111,15 +112,16 @@ export const OrganizerGrid: React.FC<OrganizerGridProps> = ({
       <header className="flex items-center justify-between px-6 py-3 border-b border-gray-200 dark:border-brand-800 bg-white dark:bg-brand-950 z-50 w-full shadow-sm">
         <div className="flex items-center gap-4">
           <div className="w-10 h-10 flex items-center justify-center bg-brand-50 dark:bg-brand-900 rounded-lg overflow-hidden border border-brand-100 dark:border-brand-800">
-            <img 
-              src="/—Pngtree—doc file document icon_4175858.png" 
-              alt="Logo" 
-              className="w-full h-full object-contain"
-              onError={(e) => {
-                (e.target as HTMLImageElement).style.display = 'none';
-                (e.target as HTMLImageElement).parentElement!.innerHTML = '<div class="text-brand-600 dark:text-brand-400 font-black text-xs">DOC</div>';
-              }}
-            />
+            {logoError ? (
+              <div className="text-brand-600 dark:text-brand-400 font-black text-xs">DOC</div>
+            ) : (
+              <img 
+                src="/logo.png" 
+                alt="Logo" 
+                className="w-full h-full object-contain"
+                onError={() => setLogoError(true)}
+              />
+            )}
           </div>
           <div className="flex flex-col">
             <h1 className="text-lg font-black text-gray-900 dark:text-white uppercase tracking-tight leading-none">Document Organizer</h1>
@@ -255,7 +257,7 @@ export const OrganizerGrid: React.FC<OrganizerGridProps> = ({
                 collisionDetection={closestCenter}
                 onDragEnd={handleFileDragEnd}
               >
-                <SortableContext items={fileIds} strategy={horizontalListSortingStrategy}>
+                <SortableContext items={fileIds} strategy={verticalListSortingStrategy}>
                   <div className="flex flex-col gap-2">
                     {fileIds.map((fileId) => {
                       const firstPage = pages.find(p => p.fileId === fileId);
@@ -383,7 +385,7 @@ export const OrganizerGrid: React.FC<OrganizerGridProps> = ({
                     collisionDetection={closestCenter}
                     onDragEnd={handleFileDragEnd}
                   >
-                    <SortableContext items={fileIds} strategy={horizontalListSortingStrategy}>
+                    <SortableContext items={fileIds} strategy={verticalListSortingStrategy}>
                       <div className="flex flex-col gap-2">
                         {fileIds.map((fileId) => {
                           const firstPage = pages.find(p => p.fileId === fileId);

@@ -34,6 +34,7 @@ export const EditorModal: React.FC<EditorModalProps> = ({
   isFirst,
   isLast,
 }) => {
+  const [logoError, setLogoError] = useState(false);
   const [editedPage, setEditedPage] = useState<PageItem>({ 
     ...page,
     annotations: page.annotations || []
@@ -437,15 +438,16 @@ export const EditorModal: React.FC<EditorModalProps> = ({
         <div className="flex items-center justify-between p-6 border-b border-gray-100 bg-white">
           <div className="flex items-center gap-4">
             <div className="w-10 h-10 flex items-center justify-center bg-brand-50 rounded-lg overflow-hidden border border-brand-100">
-              <img 
-                src="/—Pngtree—doc file document icon_4175858.png" 
-                alt="Logo" 
-                className="w-full h-full object-contain"
-                onError={(e) => {
-                  (e.target as HTMLImageElement).style.display = 'none';
-                  (e.target as HTMLImageElement).parentElement!.innerHTML = '<div class="text-brand-600 font-black text-xs">DOC</div>';
-                }}
-              />
+              {logoError ? (
+                <div className="text-brand-600 font-black text-xs">DOC</div>
+              ) : (
+                <img 
+                  src="/logo.png" 
+                  alt="Logo" 
+                  className="w-full h-full object-contain"
+                  onError={() => setLogoError(true)}
+                />
+              )}
             </div>
             <div>
               <h3 className="text-lg font-black text-gray-900 uppercase tracking-tight">Edit Page {page.pageNumber}</h3>

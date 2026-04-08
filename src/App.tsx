@@ -3,7 +3,7 @@ import { useDropzone } from 'react-dropzone';
 import { PageItem } from './types';
 import { extractPagesFromPdf, processImageFile, generatePdfFromPages, FILE_COLORS } from './lib/pdf-utils';
 import { motion, AnimatePresence } from 'motion/react';
-import { Loader2 } from 'lucide-react';
+import { Loader2, X } from 'lucide-react';
 
 import { Dropzone } from './components/Dropzone';
 
@@ -13,6 +13,7 @@ const EditorModal = lazy(() => import('./components/EditorModal').then(m => ({ d
 export default function App() {
   const [pages, setPages] = useState<PageItem[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [processProgress, setProcessProgress] = useState(0);
   const [activeEditorPage, setActiveEditorPage] = useState<PageItem | null>(null);
   const [isDarkMode, setIsDarkMode] = useState(() => {
@@ -63,7 +64,7 @@ export default function App() {
       setPages(prev => [...prev, ...newPages]);
     } catch (error) {
       console.error('Error processing files:', error);
-      alert('Failed to process one or more files. Please ensure they are valid PDFs or images.');
+      setError('Failed to process one or more files. Please ensure they are valid PDFs or images.');
     } finally {
       setIsProcessing(false);
       setProcessProgress(0);
@@ -104,6 +105,7 @@ export default function App() {
       URL.revokeObjectURL(url);
     } catch (error) {
       console.error('Error generating PDF:', error);
+      setError('Failed to generate PDF. Please try again.');
     } finally {
       setIsProcessing(false);
     }
@@ -113,8 +115,9 @@ export default function App() {
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop: (acceptedFiles) => handleFilesAdded(acceptedFiles),
-    noClick: true, // Disable click on global dropzone to prevent double dialogs
+    noClick: true,
     noKeyboard: true,
+    disabled: pages.length === 0, // Disable global dropzone when landing page dropzone is active
     accept: {
       'application/pdf': ['.pdf'],
       'image/*': ['.jpg', '.jpeg', '.png', '.webp']
@@ -140,9 +143,9 @@ export default function App() {
           }}
         />
         
-        {/* Global Drag Overlay */}
+        {/* Global Drag Overlay - Only show when grid is active */}
         <AnimatePresence>
-          {isDragActive && (
+          {isDragActive && pages.length > 0 && (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -208,6 +211,27 @@ export default function App() {
                 isLast={activeIndex === pages.length - 1}
               />
             </Suspense>
+          )}
+        </AnimatePresence>
+
+        <AnimatePresence>
+          {error && (
+            <motion.div
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="fixed top-6 left-1/2 -translate-x-1/2 z-[300] w-full max-w-md px-4"
+            >
+              <div className="bg-red-600 text-white px-6 py-4 rounded-2xl shadow-2xl flex items-center justify-between gap-4 border border-red-500">
+                <p className="text-sm font-bold">{error}</p>
+                <button 
+                  onClick={() => setError(null)}
+                  className="p-1 hover:bg-white/10 rounded-lg transition-colors"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+            </motion.div>
           )}
         </AnimatePresence>
 
