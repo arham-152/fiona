@@ -63,12 +63,17 @@ export const Dropzone: React.FC<DropzoneProps> = ({ onFilesAdded, isDarkMode, on
 
       {/* Tool Selector Bar */}
       <div className="mb-12 w-full max-w-md flex flex-col items-center gap-8">
-        <img 
-          src="https://storage.googleapis.com/static-content-ais/ais-dev-guci33aws6znemhwdf727f-579661047554.asia-southeast1.run.app/user_uploads/logo.png" 
-          alt="Logo" 
-          className="w-24 h-24 object-contain shadow-2xl rounded-full bg-white p-2"
-          referrerPolicy="no-referrer"
-        />
+        <div className="w-24 h-24 flex items-center justify-center bg-white rounded-full overflow-hidden shadow-2xl p-2 border-none leading-[17px] text-[14px]">
+          <img 
+            src="/—Pngtree—doc file document icon_4175858.png" 
+            alt="Logo" 
+            className="w-full h-full object-contain"
+            onError={(e) => {
+              (e.target as HTMLImageElement).style.display = 'none';
+              (e.target as HTMLImageElement).parentElement!.innerHTML = '<div class="text-brand-600 font-black text-xl">DOC</div>';
+            }}
+          />
+        </div>
         <div className="flex items-center justify-between p-3 bg-white dark:bg-brand-800 border border-gray-100 dark:border-brand-700 rounded-full shadow-sm w-full">
           <div className="flex items-center gap-4">
             <div className="p-3 bg-brand-600/10 dark:bg-brand-600/20 text-brand-600 dark:text-brand-400 rounded-full">
