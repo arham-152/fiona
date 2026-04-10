@@ -1,7 +1,7 @@
 import React from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { GripVertical, Trash2 } from 'lucide-react';
+import { GripVertical, Trash2, FileText } from 'lucide-react';
 
 interface FileItemProps {
   fileId: string;
@@ -32,40 +32,49 @@ export const FileItem: React.FC<FileItemProps> = React.memo(({ fileId, color, na
       ref={setNodeRef}
       style={style}
       className={`
-        flex items-center gap-3 px-3 py-2.5 bg-white dark:bg-brand-900/50 rounded-xl border transition-all cursor-default group
-        ${isDragging ? 'border-brand-600 opacity-50 scale-[1.02] shadow-2xl z-50' : 'border-gray-100 dark:border-brand-800 hover:border-brand-600/30 hover:bg-brand-50/50 dark:hover:bg-brand-800/30'}
+        flex items-center gap-3 px-3 py-3 bg-white dark:bg-saas-card-dark rounded-xl border transition-all cursor-default group
+        ${isDragging 
+          ? 'border-saas-accent-light dark:border-saas-accent-dark opacity-50 scale-[1.02] shadow-2xl z-50' 
+          : 'border-slate-100 dark:border-slate-800 hover:border-saas-accent-light/30 dark:hover:border-saas-accent-dark/30 hover:bg-slate-50 dark:hover:bg-slate-800/50 shadow-sm'}
       `}
     >
       <div 
         {...attributes} 
         {...listeners}
-        className="cursor-grab active:cursor-grabbing text-gray-300 dark:text-brand-800 group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors"
+        className="cursor-grab active:cursor-grabbing text-slate-300 dark:text-slate-600 group-hover:text-saas-accent-light dark:group-hover:text-saas-accent-dark transition-colors"
       >
-        <GripVertical size={12} />
+        <GripVertical size={14} />
       </div>
       
-      <div className="w-2 h-2 rounded-full shadow-[0_0_8px_rgba(0,0,0,0.1)] shrink-0" style={{ backgroundColor: color }} />
+      <div className="relative">
+        <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-400 dark:text-slate-500">
+          <FileText size={16} />
+        </div>
+        <div 
+          className="absolute -bottom-1 -right-1 w-3 h-3 rounded-full border-2 border-white dark:border-saas-card-dark shadow-sm" 
+          style={{ backgroundColor: color }} 
+        />
+      </div>
       
-      <span className="text-[10px] font-bold text-gray-600 dark:text-brand-200 truncate flex-1 tracking-tight">
-        {name}
-      </span>
-      
-      <div className="flex items-center gap-2">
-        <span className="text-[9px] font-black text-brand-600 dark:text-brand-400 bg-brand-50 dark:bg-brand-900/50 px-2 py-0.5 rounded-lg border border-brand-100 dark:border-brand-800 min-w-[20px] text-center">
-          {count}
+      <div className="flex flex-col flex-1 min-w-0">
+        <span className="text-[11px] font-bold text-slate-700 dark:text-slate-200 truncate tracking-tight">
+          {name}
         </span>
-        
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onDelete?.(fileId);
-          }}
-          className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md transition-all opacity-0 group-hover:opacity-100"
-          title="Delete all pages from this file"
-        >
-          <Trash2 size={12} />
-        </button>
+        <span className="text-[9px] font-medium text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+          {count} {count === 1 ? 'Page' : 'Pages'}
+        </span>
       </div>
+      
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          onDelete?.(fileId);
+        }}
+        className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-all opacity-0 group-hover:opacity-100"
+        title="Delete all pages from this file"
+      >
+        <Trash2 size={14} />
+      </button>
     </div>
   );
 });

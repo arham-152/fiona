@@ -1,20 +1,31 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
 @import "tailwindcss";
 @import "react-image-crop/dist/ReactCrop.css";
 
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
-  --color-brand-950: #050507; /* Absolute Black for Dark Mode */
-  --color-brand-900: #0a0a0c; /* Deepest Black for Dark Mode */
-  --color-brand-800: #141418; /* Dark Mode Surface */
-  --color-brand-700: #24242a; /* Dark Mode Border */
-  --color-brand-600: #4f46e5; /* Indigo Accent */
-  --color-brand-500: #6366f1; 
-  --color-brand-400: #818cf8; 
-  --color-brand-300: #a5b4fc; 
-  --color-brand-200: #ffffff; /* Pure White Background for Light Mode */
-  --color-brand-100: #ffffff; /* Pure White Surface */
-  --color-brand-50: #f8f9fa;  /* Very Light Gray for Sidebar/Subtle areas */
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+
+  /* SaaS Theme Colors - Dark Mode */
+  --color-saas-bg-dark: #0B1220;
+  --color-saas-card-dark: #111827;
+  --color-saas-border-dark: #1F2937;
+  --color-saas-accent-dark: #6366F1;
+  --color-saas-glow-dark: #22D3EE;
+
+  /* SaaS Theme Colors - Light Mode */
+  --color-saas-bg-light: #F8FAFC;
+  --color-saas-card-light: #FFFFFF;
+  --color-saas-border-light: #E5E7EB;
+  --color-saas-accent-light: #4F46E5;
+
+  /* Legacy brand colors for compatibility during transition */
+  --color-brand-950: #0B1220;
+  --color-brand-900: #111827;
+  --color-brand-800: #1F2937;
+  --color-brand-600: #6366F1;
+  --color-brand-500: #4F46E5;
 }
 
 :root {
@@ -26,64 +37,47 @@
 }
 
 body {
-  @apply bg-white dark:bg-brand-950 text-gray-900 dark:text-gray-100 transition-colors duration-300;
+  @apply font-sans antialiased bg-saas-bg-light dark:bg-saas-bg-dark text-slate-900 dark:text-slate-100 transition-colors duration-300;
   overflow-x: hidden;
 }
 
 .ReactCrop__crop-selection {
-  border: 2px solid #7BBDE8 !important;
+  border: 2px solid var(--color-saas-accent-dark) !important;
   box-shadow: 0 0 0 9999em rgba(0, 0, 0, 0.5);
 }
 
 .ReactCrop__drag-handle {
   width: 12px !important;
   height: 12px !important;
-  background-color: #7BBDE8 !important;
+  background-color: var(--color-saas-accent-dark) !important;
   border: 2px solid white !important;
   border-radius: 50% !important;
 }
 
-@layer base {
-  ::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
+@layer utilities {
+  .glass-dark {
+    @apply bg-saas-card-dark/80 backdrop-blur-xl border border-saas-border-dark;
   }
-  ::-webkit-scrollbar-track {
-    background: transparent;
+  .glass-light {
+    @apply bg-saas-card-light/80 backdrop-blur-xl border border-saas-border-light;
   }
-  ::-webkit-scrollbar-thumb {
-    background: #49769F;
-    border-radius: 10px;
+  .glow-accent {
+    box-shadow: 0 0 20px -5px var(--color-saas-accent-dark), 0 0 15px -5px var(--color-saas-glow-dark);
   }
-  ::-webkit-scrollbar-thumb:hover {
-    background: #7BBDE8;
+  .glow-accent-light {
+    box-shadow: 0 10px 15px -3px rgba(79, 70, 229, 0.3);
   }
-  .no-scrollbar::-webkit-scrollbar {
-    display: none;
-  }
-  .no-scrollbar {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
-  }
-
   .custom-scrollbar::-webkit-scrollbar {
     width: 6px;
     height: 6px;
   }
   .custom-scrollbar::-webkit-scrollbar-track {
-    background: transparent;
+    @apply bg-transparent;
   }
   .custom-scrollbar::-webkit-scrollbar-thumb {
-    background: rgba(0, 0, 0, 0.1);
-    border-radius: 10px;
-  }
-  .dark .custom-scrollbar::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.1);
+    @apply bg-slate-300 dark:bg-slate-700 rounded-full;
   }
   .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-    background: rgba(0, 0, 0, 0.2);
-  }
-  .dark .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-    background: rgba(255, 255, 255, 0.2);
+    @apply bg-slate-400 dark:bg-slate-600;
   }
 }

@@ -3,7 +3,7 @@ import { useDropzone } from 'react-dropzone';
 import { PageItem } from './types';
 import { extractPagesFromPdf, processImageFile, generatePdfFromPages, FILE_COLORS } from './lib/pdf-utils';
 import { motion, AnimatePresence } from 'motion/react';
-import { Loader2, X } from 'lucide-react';
+import { Loader2, X, Sun, Moon, ShieldCheck } from 'lucide-react';
 
 import { Dropzone } from './components/Dropzone';
 
@@ -127,7 +127,7 @@ export default function App() {
   return (
     <div 
       {...getRootProps()}
-      className="min-h-screen bg-white dark:bg-brand-900 text-gray-900 dark:text-gray-100 selection:bg-brand-400/30 outline-none transition-colors duration-300"
+      className="min-h-screen bg-saas-bg-light dark:bg-saas-bg-dark text-slate-900 dark:text-slate-100 selection:bg-saas-accent-light/30 outline-none transition-colors duration-300"
     >
         <input {...getInputProps()} />
         <input 
@@ -142,6 +142,45 @@ export default function App() {
             e.target.value = ''; // Reset for same file re-upload
           }}
         />
+
+        {/* Premium Sticky Navbar */}
+        <nav className="sticky top-0 z-[150] w-full border-b border-saas-border-light dark:border-saas-border-dark bg-saas-bg-light/80 dark:bg-saas-bg-dark/80 backdrop-blur-xl">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex justify-between h-16 items-center">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 flex items-center justify-center bg-saas-accent-light dark:bg-saas-accent-dark rounded-lg shadow-lg glow-accent">
+                  <img src="/logo.png" alt="Logo" className="w-5 h-5 object-contain invert brightness-0" />
+                </div>
+                <span className="text-lg font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-slate-600 dark:from-white dark:to-slate-400">
+                  DocFlow
+                </span>
+                <div className="hidden sm:flex items-center gap-1.5 px-2 py-0.5 bg-emerald-500/10 text-emerald-500 rounded-full border border-emerald-500/20 text-[10px] font-bold uppercase tracking-wider">
+                  <ShieldCheck size={12} />
+                  <span>Secure</span>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-4">
+                <button
+                  onClick={() => setIsDarkMode(!isDarkMode)}
+                  className="p-2 rounded-xl border border-saas-border-light dark:border-saas-border-dark hover:bg-slate-100 dark:hover:bg-slate-800 transition-all active:scale-95"
+                >
+                  {isDarkMode ? <Sun size={18} className="text-amber-400" /> : <Moon size={18} className="text-slate-600" />}
+                </button>
+                {pages.length > 0 && (
+                  <button
+                    onClick={handleDownload}
+                    disabled={isProcessing}
+                    className="hidden sm:flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-saas-accent-light to-indigo-600 dark:from-saas-accent-dark dark:to-indigo-500 text-white rounded-xl font-semibold text-sm shadow-lg hover:shadow-indigo-500/25 transition-all active:scale-95 disabled:opacity-50"
+                  >
+                    {isProcessing ? <Loader2 size={16} className="animate-spin" /> : null}
+                    <span>Export PDF</span>
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        </nav>
         
         {/* Global Drag Overlay - Only show when grid is active */}
         <AnimatePresence>
@@ -151,23 +190,23 @@ export default function App() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.15 }}
-              className="fixed inset-0 z-[200] flex items-center justify-center bg-emerald-600/20 backdrop-blur-sm border-4 border-dashed border-emerald-500 m-4 rounded-3xl pointer-events-none"
+              className="fixed inset-0 z-[200] flex items-center justify-center bg-saas-accent-dark/10 backdrop-blur-sm border-4 border-dashed border-saas-accent-dark m-4 rounded-3xl pointer-events-none"
             >
-              <div className="bg-gray-900 p-8 rounded-2xl shadow-2xl flex flex-col items-center gap-4">
-                <div className="w-16 h-16 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-500">
+              <div className="bg-saas-card-dark p-8 rounded-2xl shadow-2xl flex flex-col items-center gap-4 border border-saas-border-dark">
+                <div className="w-16 h-16 rounded-full bg-saas-accent-dark/20 flex items-center justify-center text-saas-accent-dark glow-accent">
                   <Loader2 className="animate-bounce" size={32} />
                 </div>
-                <p className="text-xl font-black text-white uppercase tracking-widest">Drop to add files</p>
+                <p className="text-xl font-bold text-white tracking-tight">Drop to add files</p>
               </div>
             </motion.div>
           )}
         </AnimatePresence>
 
-        <div className="fixed top-0 left-1/2 -translate-x-1/2 w-full max-w-[1000px] h-[600px] bg-brand-600/5 blur-[120px] pointer-events-none -z-10" />
+        <div className="fixed top-0 left-1/2 -translate-x-1/2 w-full max-w-[1200px] h-[600px] bg-saas-accent-dark/5 blur-[120px] pointer-events-none -z-10" />
 
-        <main className="min-h-screen flex flex-col">
+        <main className="flex-1 flex flex-col max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8">
           {pages.length === 0 ? (
-            <div className="max-w-[1800px] mx-auto w-full px-4 py-12">
+            <div className="flex-1 flex items-center justify-center py-12">
               <Dropzone 
                 onFilesAdded={handleFilesAdded} 
                 isDarkMode={isDarkMode}
@@ -175,7 +214,7 @@ export default function App() {
               />
             </div>
           ) : (
-            <Suspense fallback={<div className="flex-1 flex items-center justify-center"><Loader2 className="animate-spin text-brand-500" size={48} /></div>}>
+            <Suspense fallback={<div className="flex-1 flex items-center justify-center"><Loader2 className="animate-spin text-saas-accent-light dark:text-saas-accent-dark" size={48} /></div>}>
               <OrganizerGrid
                 pages={pages}
                 onReorder={handleReorder}
@@ -242,27 +281,29 @@ export default function App() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.15 }}
-              className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-black/60 backdrop-blur-md"
+              className="fixed inset-0 z-[300] flex flex-col items-center justify-center bg-slate-900/60 backdrop-blur-md"
             >
-              <div className="p-8 rounded-3xl bg-gray-900 border border-gray-800 shadow-2xl flex flex-col items-center gap-4">
+              <div className="p-8 rounded-3xl bg-saas-card-dark border border-saas-border-dark shadow-2xl flex flex-col items-center gap-6 max-w-sm w-full mx-4">
                 <div className="relative">
-                  <Loader2 className="animate-spin text-brand-500" size={48} />
+                  <div className="w-20 h-20 rounded-full border-4 border-saas-accent-dark/20 border-t-saas-accent-dark animate-spin" />
                   <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="w-2 h-2 bg-brand-500 rounded-full animate-pulse" />
+                    <div className="w-3 h-3 bg-saas-accent-dark rounded-full glow-accent" />
                   </div>
                 </div>
-                <div className="text-center w-full max-w-xs">
-                  <p className="text-lg font-bold text-white uppercase tracking-widest">Processing Document</p>
-                  <div className="mt-4 h-1.5 w-full bg-gray-800 rounded-full overflow-hidden">
+                <div className="text-center w-full">
+                  <p className="text-xl font-bold text-white tracking-tight">Processing Document</p>
+                  <div className="mt-6 h-2 w-full bg-slate-800 rounded-full overflow-hidden">
                     <motion.div 
-                      className="h-full bg-brand-500"
+                      className="h-full bg-gradient-to-r from-saas-accent-dark to-saas-glow-dark"
                       initial={{ width: 0 }}
                       animate={{ width: `${processProgress}%` }}
                       transition={{ duration: 0.3 }}
                     />
                   </div>
-                  <p className="text-[10px] text-gray-500 mt-2 font-bold uppercase tracking-widest">{processProgress}% Complete</p>
-                  <p className="text-xs text-gray-400 mt-1">Optimizing pages for best quality...</p>
+                  <div className="flex justify-between mt-2">
+                    <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">{processProgress}% Complete</p>
+                    <p className="text-[10px] text-saas-accent-dark font-bold uppercase tracking-widest">Optimizing</p>
+                  </div>
                 </div>
               </div>
             </motion.div>

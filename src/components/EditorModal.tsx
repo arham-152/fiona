@@ -4,8 +4,8 @@ import ReactCrop, { Crop, PixelCrop, centerCrop, makeAspectCrop } from 'react-im
 import { 
   X, RotateCcw, RotateCw, 
   Check, Trash2, Sparkles, ChevronLeft, ChevronRight,
-  RefreshCcw, Crop as CropIcon, Undo2, Redo2, Type, Square, FileText, Image as ImageIcon,
-  ZoomIn, ZoomOut
+  Crop as CropIcon, Undo2, Redo2, Type, Square, FileText, Image as ImageIcon,
+  ZoomIn, ZoomOut, Maximize2, Sliders, Palette, Layers
 } from 'lucide-react';
 import { PageItem, Annotation } from '../types';
 import { clsx } from 'clsx';
@@ -34,7 +34,6 @@ export const EditorModal: React.FC<EditorModalProps> = ({
   isFirst,
   isLast,
 }) => {
-  const [logoError, setLogoError] = useState(false);
   const [editedPage, setEditedPage] = useState<PageItem>({ 
     ...page,
     annotations: page.annotations || []
@@ -47,7 +46,6 @@ export const EditorModal: React.FC<EditorModalProps> = ({
   const addToHistory = useCallback((newPage: PageItem) => {
     setHistory(prev => {
       const next = prev.slice(0, currentIndex + 1);
-      // Simple check to avoid duplicate states
       if (JSON.stringify(next[next.length - 1]) === JSON.stringify(newPage)) return prev;
       const updated = [...next, newPage];
       setCurrentIndex(updated.length - 1);
@@ -112,7 +110,6 @@ export const EditorModal: React.FC<EditorModalProps> = ({
   const addToCropHistory = useCallback((newCrop: Crop) => {
     setCropHistory(prev => {
       const next = prev.slice(0, historyIndex + 1);
-      // Only add if it's significantly different to avoid spam
       const last = next[next.length - 1];
       if (last && last.x === newCrop.x && last.y === newCrop.y && last.width === newCrop.width && last.height === newCrop.height) {
         return prev;
@@ -122,22 +119,6 @@ export const EditorModal: React.FC<EditorModalProps> = ({
       return updated;
     });
   }, [historyIndex]);
-
-  const handleUndoCrop = () => {
-    if (historyIndex > 0) {
-      const prevIndex = historyIndex - 1;
-      setHistoryIndex(prevIndex);
-      setCrop(cropHistory[prevIndex]);
-    }
-  };
-
-  const handleRedoCrop = () => {
-    if (historyIndex < cropHistory.length - 1) {
-      const nextIndex = historyIndex + 1;
-      setHistoryIndex(nextIndex);
-      setCrop(cropHistory[nextIndex]);
-    }
-  };
 
   // Annotation state
   const [selectedAnnotationId, setSelectedAnnotationId] = useState<string | null>(null);
@@ -163,7 +144,6 @@ export const EditorModal: React.FC<EditorModalProps> = ({
           [key]: value
         }
       };
-      // Debounce history for adjustments to avoid massive stacks
       return updated;
     });
   };
@@ -297,12 +277,10 @@ export const EditorModal: React.FC<EditorModalProps> = ({
         ...prev,
         annotations: (prev.annotations || []).map(a => a.id === id ? { ...a, ...updates } : a)
       };
-      // We don't add to history on every tiny movement to avoid lag
       return updated;
     });
   };
 
-  // Add to history after annotation move/resize finishes
   const commitAnnotationChange = useCallback(() => {
     addToHistory(editedPage);
   }, [addToHistory, editedPage]);
@@ -318,7 +296,6 @@ export const EditorModal: React.FC<EditorModalProps> = ({
         editedPage.rotation
       );
 
-      // Calculate scale between displayed image and natural bounding box
       const scaleX = bBoxWidth / image.width;
       const scaleY = bBoxHeight / image.height;
 
@@ -342,8 +319,8 @@ export const EditorModal: React.FC<EditorModalProps> = ({
           const updated = {
             ...prev,
             dataUrl: croppedImage,
-            rotation: 0, // Reset rotation after applying crop to the base image
-            adjustments: { brightness: 100, contrast: 100, saturation: 100 } // Reset adjustments as they are baked in
+            rotation: 0,
+            adjustments: { brightness: 100, contrast: 100, saturation: 100 }
           };
           addToHistory(updated);
           return updated;
@@ -381,13 +358,11 @@ export const EditorModal: React.FC<EditorModalProps> = ({
     if (!imgRef.current) return;
     setIsDetecting(true);
     try {
-      // Try local AI first (TensorFlow.js)
       const subject = await detectSubject(imgRef.current);
       if (subject) {
         const { width, height } = imgRef.current;
         const newCrop = getSmartCropFromSubject(subject.bbox, width, height);
         setCrop(newCrop);
-        // Trigger pixel crop update
         setCompletedCrop({
           unit: 'px',
           x: (newCrop.x / 100) * width,
@@ -399,7 +374,6 @@ export const EditorModal: React.FC<EditorModalProps> = ({
         return;
       }
 
-      // Fallback to Gemini AI
       const result = await analyzeImageForSmartCrop(editedPage.dataUrl);
       if (result && result.crop) {
         const { width, height } = imgRef.current;
@@ -427,687 +401,316 @@ export const EditorModal: React.FC<EditorModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-[200] flex items-center justify-center p-0 sm:p-4 bg-brand-900/95 backdrop-blur-md">
+    <div className="fixed inset-0 z-[200] flex items-center justify-center p-0 sm:p-4 bg-slate-900/95 backdrop-blur-xl">
       <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.2 }}
-        className="relative w-full max-w-7xl h-full sm:h-[95vh] bg-white rounded-none sm:rounded-2xl overflow-hidden flex flex-col shadow-2xl border border-gray-200"
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="relative w-full max-w-7xl h-full sm:h-[90vh] bg-white dark:bg-saas-bg-dark rounded-none sm:rounded-[32px] overflow-hidden flex flex-col shadow-2xl border border-slate-200 dark:border-saas-border-dark"
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-100 bg-white">
-          <div className="flex items-center gap-4">
-            <div className="w-10 h-10 flex items-center justify-center bg-brand-50 rounded-lg overflow-hidden border border-brand-100">
-              {logoError ? (
-                <div className="text-brand-600 font-black text-xs">DOC</div>
-              ) : (
-                <img 
-                  src="/logo.png" 
-                  alt="Logo" 
-                  className="w-full h-full object-contain"
-                  onError={() => setLogoError(true)}
-                />
-              )}
+        <div className="flex items-center justify-between px-8 py-5 border-b border-slate-100 dark:border-saas-border-dark bg-white dark:bg-saas-card-dark">
+          <div className="flex items-center gap-6">
+            <div className="flex items-center gap-2">
+              <button 
+                onClick={onPrev}
+                disabled={isFirst}
+                className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 dark:text-slate-500 disabled:opacity-30 rounded-xl transition-all"
+              >
+                <ChevronLeft size={20} />
+              </button>
+              <div className="px-3 py-1 bg-slate-100 dark:bg-slate-800 rounded-lg text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">
+                Page {page.pageNumber}
+              </div>
+              <button 
+                onClick={onNext}
+                disabled={isLast}
+                className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 dark:text-slate-500 disabled:opacity-30 rounded-xl transition-all"
+              >
+                <ChevronRight size={20} />
+              </button>
             </div>
-            <div>
-              <h3 className="text-lg font-black text-gray-900 uppercase tracking-tight">Edit Page {page.pageNumber}</h3>
-              <p className="text-xs text-gray-500 font-medium">Customize and annotate your document page</p>
-            </div>
-          </div>
-          
-          <div className="flex items-center gap-3">
-            <div className="flex items-center bg-gray-50 rounded-lg p-1 border border-gray-200 mr-2">
+            <div className="w-px h-6 bg-slate-200 dark:bg-slate-800" />
+            <div className="flex items-center gap-1 p-1 bg-slate-100 dark:bg-slate-800 rounded-xl">
               <button 
                 onClick={undo}
                 disabled={currentIndex <= 0}
-                className="p-2 hover:bg-gray-100 text-gray-700 disabled:text-gray-300 disabled:hover:bg-transparent rounded-md transition-colors"
-                title="Undo"
+                className="p-2 hover:bg-white dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 disabled:opacity-30 rounded-lg transition-all shadow-sm"
               >
                 <Undo2 size={18} />
               </button>
-              <div className="w-px h-4 bg-gray-200 mx-1" />
               <button 
                 onClick={redo}
                 disabled={currentIndex >= history.length - 1}
-                className="p-2 hover:bg-gray-100 text-gray-700 disabled:text-gray-300 disabled:hover:bg-transparent rounded-md transition-colors"
-                title="Redo"
+                className="p-2 hover:bg-white dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 disabled:opacity-30 rounded-lg transition-all shadow-sm"
               >
                 <Redo2 size={18} />
               </button>
             </div>
-            
+          </div>
+          
+          <div className="flex items-center gap-3">
             <button 
               onClick={handleReset}
-              className="px-4 py-2 bg-gray-50 hover:bg-gray-100 text-gray-700 rounded-lg transition-colors text-xs font-bold uppercase tracking-wider border border-gray-200"
+              className="px-4 py-2 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white text-xs font-bold uppercase tracking-widest transition-colors"
             >
-              RESET
+              Reset
+            </button>
+            <button 
+              onClick={() => onSave(editedPage)}
+              className="flex items-center gap-2 px-6 py-2.5 bg-saas-accent-light dark:bg-saas-accent-dark text-white rounded-xl font-bold text-xs uppercase tracking-widest shadow-lg shadow-saas-accent-light/20 dark:shadow-saas-accent-dark/20 hover:brightness-110 transition-all"
+            >
+              <Check size={18} />
+              Save Changes
             </button>
             <button 
               onClick={onClose}
-              className="p-2 bg-gray-50 hover:bg-gray-100 text-gray-500 rounded-lg transition-colors border border-gray-200"
+              className="p-2.5 text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-all"
             >
               <X size={20} />
             </button>
           </div>
         </div>
 
-        {/* Main Editor Area */}
-        <div className="flex-1 flex flex-col lg:flex-row overflow-y-auto lg:overflow-hidden custom-scrollbar bg-gray-50">
-          {/* Left: Image Preview / Cropper */}
-          <div className={clsx(
-            "shrink-0 lg:flex-1 relative bg-gray-50 flex items-center justify-center group p-2 sm:p-4 min-h-[45vh] lg:min-h-0",
-            isCropping ? "overflow-hidden bg-zinc-900" : "lg:overflow-auto custom-scrollbar"
-          )}>
-            {isCropping ? (
-              <div className="relative w-full h-full flex flex-col bg-zinc-900 overflow-hidden">
-                <div className="flex-1 w-full overflow-auto custom-scrollbar p-4 sm:p-12 flex items-center justify-center">
-                  <div 
-                    style={{ 
-                      width: `${100 * zoom}%`,
-                      maxWidth: 'none',
-                      transition: 'width 0.2s ease-out'
+        {/* Editor Body */}
+        <div className="flex-1 flex overflow-hidden bg-slate-50 dark:bg-saas-bg-dark">
+          {/* Main Canvas */}
+          <div className="flex-1 relative flex items-center justify-center p-8 overflow-auto custom-scrollbar">
+            <div 
+              ref={containerRef}
+              className="relative shadow-2xl bg-white dark:bg-slate-900 transition-transform duration-500"
+              style={{ transform: `rotate(${editedPage.rotation}deg)` }}
+            >
+              <img
+                ref={imgRef}
+                src={editedPage.dataUrl}
+                alt="Editor Preview"
+                className="max-w-full max-h-[70vh] object-contain"
+                style={{ 
+                  filter: `brightness(${editedPage.adjustments.brightness}%) contrast(${editedPage.adjustments.contrast}%) saturate(${editedPage.adjustments.saturation}%) ${
+                    editedPage.filter === 'grayscale' ? 'grayscale(100%)' : 
+                    editedPage.filter === 'punch' ? 'contrast(120%) saturate(120%)' :
+                    editedPage.filter === 'golden' ? 'sepia(30%) saturate(140%) brightness(110%)' :
+                    editedPage.filter === 'radiate' ? 'brightness(115%) saturate(130%)' :
+                    editedPage.filter === 'warm-contrast' ? 'sepia(10%) contrast(110%) saturate(110%)' :
+                    editedPage.filter === 'calm' ? 'saturate(80%) brightness(105%)' :
+                    editedPage.filter === 'cool-light' ? 'hue-rotate(10deg) saturate(90%) brightness(110%)' :
+                    editedPage.filter === 'vivid-cool' ? 'saturate(140%) hue-rotate(10deg)' :
+                    editedPage.filter === 'dramatic-cool' ? 'contrast(130%) hue-rotate(20deg) saturate(80%)' : ''
+                  }`
+                }}
+                referrerPolicy="no-referrer"
+              />
+              
+              {/* Annotations */}
+              <div className="absolute inset-0 pointer-events-none">
+                {editedPage.annotations?.map((anno) => (
+                  <div
+                    key={anno.id}
+                    className={clsx(
+                      "absolute pointer-events-auto group",
+                      selectedAnnotationId === anno.id && "ring-2 ring-saas-accent-light dark:ring-saas-accent-dark ring-offset-2 dark:ring-offset-slate-900"
+                    )}
+                    style={{
+                      left: `${anno.x}%`,
+                      top: `${anno.y}%`,
+                      width: anno.type === 'rect' ? `${anno.width}%` : 'auto',
+                      height: anno.type === 'rect' ? `${anno.height}%` : 'auto',
+                      backgroundColor: anno.type === 'rect' ? anno.color : 'transparent',
+                      color: anno.type === 'text' ? anno.color : 'inherit',
+                      fontSize: anno.type === 'text' ? `${anno.fontSize}px` : 'inherit',
+                      fontWeight: anno.type === 'text' ? 'bold' : 'normal',
+                    }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedAnnotationId(anno.id);
                     }}
                   >
-                    <ReactCrop
-                      crop={crop}
-                      onChange={c => setCrop(c)}
-                      onComplete={c => {
-                        setCompletedCrop(c);
-                        if (crop) addToCropHistory(crop);
-                      }}
-                      aspect={aspect}
-                      ruleOfThirds={showGrid}
-                      className="shadow-2xl"
-                    >
-                      <img
-                        ref={imgRef}
-                        src={editedPage.dataUrl}
-                        alt="Crop Preview"
-                        onLoad={onImageLoad}
-                        className="w-full h-auto block"
-                        style={{ 
-                          transform: `rotate(${editedPage.rotation}deg)`,
-                          transformOrigin: 'center center',
-                          filter: `brightness(${editedPage.adjustments.brightness}%) contrast(${editedPage.adjustments.contrast}%) saturate(${editedPage.adjustments.saturation}%) ${
-                            editedPage.filter === 'grayscale' ? 'grayscale(100%)' : 
-                            editedPage.filter === 'punch' ? 'contrast(120%) saturate(120%)' :
-                            editedPage.filter === 'golden' ? 'sepia(30%) saturate(140%) brightness(110%)' :
-                            editedPage.filter === 'radiate' ? 'brightness(115%) saturate(130%)' :
-                            editedPage.filter === 'warm-contrast' ? 'sepia(10%) contrast(110%) saturate(110%)' :
-                            editedPage.filter === 'calm' ? 'saturate(80%) brightness(105%)' :
-                            editedPage.filter === 'cool-light' ? 'hue-rotate(10deg) saturate(90%) brightness(110%)' :
-                            editedPage.filter === 'vivid-cool' ? 'saturate(140%) hue-rotate(10deg)' :
-                            editedPage.filter === 'dramatic-cool' ? 'contrast(130%) hue-rotate(20deg) saturate(80%)' : ''
-                          }`
-                        }}
-                      />
-                    </ReactCrop>
+                    {anno.type === 'text' && (
+                      <div className="whitespace-nowrap px-2 py-1">{anno.text}</div>
+                    )}
+                    {anno.type === 'image' && anno.image && (
+                      <img src={anno.image} alt="Annotation" className="w-full h-full object-contain" referrerPolicy="no-referrer" />
+                    )}
                   </div>
-                </div>
-                
-                {/* Crop Tool Bottom Bar - Matching Screenshot */}
-                <div className="w-full bg-zinc-900/95 border-t border-zinc-800 p-4 sm:p-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-                  <div className="flex items-center gap-6">
-                    <div className="flex flex-col gap-1">
-                      <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-2">
-                        <ZoomIn size={12} />
-                        ZOOM & ALIGNMENT
-                      </label>
-                      <div className="flex items-center gap-3">
-                        <div className="flex items-center bg-zinc-800 rounded-lg p-1">
-                          <button 
-                            onClick={() => handleZoom('out')}
-                            className="p-2 hover:bg-zinc-700 text-zinc-300 rounded-md transition-colors"
-                            title="Zoom Out"
-                          >
-                            <ZoomOut size={18} />
-                          </button>
-                          <div className="w-px h-4 bg-zinc-700 mx-1" />
-                          <button 
-                            onClick={() => handleZoom('in')}
-                            className="p-2 hover:bg-zinc-700 text-zinc-300 rounded-md transition-colors"
-                            title="Zoom In"
-                          >
-                            <ZoomIn size={18} />
-                          </button>
-                        </div>
-                        <div className="w-px h-6 bg-zinc-800 mx-1" />
-                        <button 
-                          onClick={() => handleRotate('left')}
-                          className="p-2 bg-zinc-800/50 hover:bg-zinc-800 text-emerald-500 rounded-lg transition-colors border border-emerald-500/20"
-                          title="Rotate Left"
-                        >
-                          <RotateCcw size={18} />
-                        </button>
-                        <button 
-                          onClick={() => handleRotate('right')}
-                          className="p-2 bg-zinc-800/50 hover:bg-zinc-800 text-emerald-500 rounded-lg transition-colors border border-emerald-500/20"
-                          title="Rotate Right"
-                        >
-                          <RotateCw size={18} />
-                        </button>
-                      </div>
-                    </div>
-
-                  <div className="flex items-center gap-3">
-                    <button 
-                      onClick={handleSmartSuggest}
-                      disabled={isDetecting}
-                      className={clsx(
-                        "flex items-center gap-2 px-6 py-2.5 rounded-full font-bold text-[10px] uppercase tracking-widest transition-all",
-                        isDetecting ? "bg-zinc-800 text-zinc-500" : "bg-zinc-800/50 hover:bg-zinc-800 text-emerald-500 border border-emerald-500/30"
-                      )}
-                    >
-                      <Sparkles size={16} className={isDetecting ? "animate-spin" : ""} />
-                      {isDetecting ? 'Detecting...' : 'AI Auto Crop'}
-                    </button>
-                    <button 
-                      onClick={handleApplyCrop}
-                      className="flex items-center gap-2 px-8 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-full font-bold text-[10px] uppercase tracking-widest shadow-lg shadow-emerald-600/20 transition-all"
-                    >
-                      <Check size={18} />
-                      APPLY
-                    </button>
-                    <button 
-                      onClick={() => setIsCropping(false)}
-                      className="p-2.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-400 rounded-full transition-all"
-                    >
-                      <X size={20} />
-                    </button>
-                  </div>
-                </div>
+                ))}
               </div>
             </div>
-            ) : (
-              <div
-                key={editedPage.id + editedPage.rotation + editedPage.dataUrl}
-                className="relative w-full h-full flex items-center justify-center p-2 sm:p-8"
-                ref={containerRef}
-                onClick={() => setSelectedAnnotationId(null)}
-              >
-                  <div 
-                    className="relative transition-transform duration-500 ease-out flex items-center justify-center"
-                    style={{ 
-                      transform: `rotate(${editedPage.rotation}deg)`,
-                      width: isFitToScreen ? '100%' : 'auto',
-                      height: isFitToScreen ? '100%' : 'auto',
-                    }}
-                  >
-                    <img
-                      src={editedPage.dataUrl}
-                      alt="Editor Preview"
-                      className={clsx(
-                        "shadow-2xl object-contain transition-all",
-                        isFitToScreen ? "max-w-full max-h-full" : "w-auto h-auto"
-                      )}
-                      style={{ 
-                        filter: `brightness(${editedPage.adjustments.brightness}%) contrast(${editedPage.adjustments.contrast}%) saturate(${editedPage.adjustments.saturation}%) ${
-                          editedPage.filter === 'grayscale' ? 'grayscale(100%)' : 
-                          editedPage.filter === 'punch' ? 'contrast(120%) saturate(120%)' :
-                          editedPage.filter === 'golden' ? 'sepia(30%) saturate(140%) brightness(110%)' :
-                          editedPage.filter === 'radiate' ? 'brightness(115%) saturate(130%)' :
-                          editedPage.filter === 'warm-contrast' ? 'sepia(10%) contrast(110%) saturate(110%)' :
-                          editedPage.filter === 'calm' ? 'saturate(80%) brightness(105%)' :
-                          editedPage.filter === 'cool-light' ? 'hue-rotate(10deg) saturate(90%) brightness(110%)' :
-                          editedPage.filter === 'vivid-cool' ? 'saturate(140%) hue-rotate(10deg)' :
-                          editedPage.filter === 'dramatic-cool' ? 'contrast(130%) hue-rotate(20deg) saturate(80%)' : ''
-                        }`
-                      }}
-                      referrerPolicy="no-referrer"
-                    />
-                    
-                    {/* Annotations Layer */}
-                    <div className="absolute inset-0 pointer-events-none">
-                      {editedPage.annotations?.map((anno) => (
-                        <div
-                          key={anno.id}
-                          className={clsx(
-                            "absolute pointer-events-auto group",
-                            editingAnnotationId !== anno.id && "cursor-move",
-                            selectedAnnotationId === anno.id && "ring-2 ring-brand-600 ring-offset-2 ring-offset-brand-900"
-                          )}
-                          style={{
-                            left: `${anno.x}%`,
-                            top: `${anno.y}%`,
-                            width: anno.type === 'rect' ? `${anno.width}%` : 'auto',
-                            height: anno.type === 'rect' ? `${anno.height}%` : 'auto',
-                            backgroundColor: anno.type === 'rect' ? anno.color : 'transparent',
-                            color: anno.type === 'text' ? anno.color : 'inherit',
-                            fontSize: anno.type === 'text' ? `${anno.fontSize}px` : 'inherit',
-                            fontWeight: anno.type === 'text' ? 'bold' : 'normal',
-                            zIndex: selectedAnnotationId === anno.id ? 30 : 20
-                          }}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setSelectedAnnotationId(anno.id);
-                          }}
-                          onMouseDown={(e) => {
-                            if (selectedAnnotationId !== anno.id || editingAnnotationId === anno.id) return;
-                            const startX = e.clientX;
-                            const startY = e.clientY;
-                            const initialX = anno.x;
-                            const initialY = anno.y;
-                            const rotationRad = (editedPage.rotation * Math.PI) / 180;
-                            let hasMoved = false;
- 
-                            const onMouseMove = (moveEvent: MouseEvent) => {
-                              const container = containerRef.current;
-                              if (!container) return;
-                              
-                              // Rotate mouse movement back to local coordinates
-                              const rawDx = moveEvent.clientX - startX;
-                              const rawDy = moveEvent.clientY - startY;
-                              
-                              const dx = (rawDx * Math.cos(-rotationRad) - rawDy * Math.sin(-rotationRad)) / container.clientWidth * 100;
-                              const dy = (rawDx * Math.sin(-rotationRad) + rawDy * Math.cos(-rotationRad)) / container.clientHeight * 100;
-                              
-                              if (Math.abs(dx) > 0.1 || Math.abs(dy) > 0.1) {
-                                hasMoved = true;
-                                updateAnnotation(anno.id, {
-                                  x: Math.max(0, Math.min(100, initialX + dx)),
-                                  y: Math.max(0, Math.min(100, initialY + dy))
-                                });
-                              }
-                            };
- 
-                            const onMouseUp = () => {
-                              document.removeEventListener('mousemove', onMouseMove);
-                              document.removeEventListener('mouseup', onMouseUp);
-                              if (hasMoved) commitAnnotationChange();
-                            };
- 
-                            document.addEventListener('mousemove', onMouseMove);
-                            document.addEventListener('mouseup', onMouseUp);
-                          }}
-                        >
-                          {anno.type === 'text' && (
-                            <div 
-                              onDoubleClick={(e) => {
-                                e.stopPropagation();
-                                setEditingAnnotationId(anno.id);
-                              }}
-                              className="whitespace-nowrap px-2 py-1 select-none"
-                            >
-                              {editingAnnotationId === anno.id ? (
-                                <input
-                                  autoFocus
-                                  type="text"
-                                  value={anno.text}
-                                  onChange={(e) => updateAnnotation(anno.id, { text: e.target.value })}
-                                  onBlur={() => setEditingAnnotationId(null)}
-                                  onKeyDown={(e) => {
-                                    if (e.key === 'Enter') setEditingAnnotationId(null);
-                                  }}
-                                  className="bg-white/10 border-none outline-none text-inherit px-1 rounded"
-                                  style={{ width: `${Math.max(2, anno.text.length)}ch` }}
-                                />
-                              ) : (
-                                anno.text
-                              )}
-                            </div>
-                          )}
-
-                          {anno.type === 'image' && anno.image && (
-                            <img 
-                              src={anno.image} 
-                              alt="Annotation" 
-                              className="w-full h-full object-contain pointer-events-none select-none"
-                              referrerPolicy="no-referrer"
-                            />
-                          )}
-
-                          {selectedAnnotationId === anno.id && (
-                            <>
-                              {/* Resize Handles */}
-                              {['top-left', 'top-right', 'bottom-left', 'bottom-right'].map(corner => (
-                                <div
-                                  key={corner}
-                                  className={clsx(
-                                    "absolute w-4 h-4 bg-brand-600 border-2 border-white rounded-full z-40 shadow-lg",
-                                    corner === 'top-left' && "-top-2 -left-2 cursor-nw-resize",
-                                    corner === 'top-right' && "-top-2 -right-2 cursor-ne-resize",
-                                    corner === 'bottom-left' && "-bottom-2 -left-2 cursor-sw-resize",
-                                    corner === 'bottom-right' && "-bottom-2 -right-2 cursor-se-resize"
-                                  )}
-                                  onMouseDown={(e) => {
-                                    e.stopPropagation();
-                                    const startX = e.clientX;
-                                    const startY = e.clientY;
-                                    const initialX = anno.x;
-                                    const initialY = anno.y;
-                                    const initialW = anno.width || 10;
-                                    const initialH = anno.height || 5;
-                                    const rotationRad = (editedPage.rotation * Math.PI) / 180;
- 
-                                    const onMouseMove = (moveEvent: MouseEvent) => {
-                                      const container = containerRef.current;
-                                      if (!container) return;
-                                      
-                                      // Rotate mouse movement back to local coordinates
-                                      const rawDx = moveEvent.clientX - startX;
-                                      const rawDy = moveEvent.clientY - startY;
-                                      
-                                      const dx = (rawDx * Math.cos(-rotationRad) - rawDy * Math.sin(-rotationRad)) / container.clientWidth * 100;
-                                      const dy = (rawDx * Math.sin(-rotationRad) + rawDy * Math.cos(-rotationRad)) / container.clientHeight * 100;
- 
-                                      let newX = initialX;
-                                      let newY = initialY;
-                                      let newW = initialW;
-                                      let newH = initialH;
- 
-                                      if (corner.includes('right')) newW = Math.max(5, initialW + dx);
-                                      if (corner.includes('left')) {
-                                        newW = Math.max(5, initialW - dx);
-                                        newX = initialX + (initialW - newW);
-                                      }
-                                      if (corner.includes('bottom')) newH = Math.max(2, initialH + dy);
-                                      if (corner.includes('top')) {
-                                        newH = Math.max(2, initialH - dy);
-                                        newY = initialY + (initialH - newH);
-                                      }
- 
-                                      updateAnnotation(anno.id, { x: newX, y: newY, width: newW, height: newH });
-                                    };
- 
-                                    const onMouseUp = () => {
-                                      document.removeEventListener('mousemove', onMouseMove);
-                                      document.removeEventListener('mouseup', onMouseUp);
-                                      commitAnnotationChange();
-                                    };
- 
-                                    document.addEventListener('mousemove', onMouseMove);
-                                    document.addEventListener('mouseup', onMouseUp);
-                                  }}
-                                />
-                              ))}
-                            </>
-                          )}
-                          
-                          {selectedAnnotationId === anno.id && (
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                removeAnnotation(anno.id);
-                              }}
-                              className="absolute -top-3 -right-3 p-1 bg-red-600 text-white rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-50"
-                            >
-                              <X size={12} />
-                            </button>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-            )}
- 
-            {/* Navigation Arrows */}
-            {!isFirst && !isCropping && (
-              <button 
-                onClick={onPrev}
-                className="absolute left-6 p-4 bg-gray-900/50 hover:bg-gray-900 text-white rounded-full transition-all opacity-0 group-hover:opacity-100 z-10"
-              >
-                <ChevronLeft size={24} />
-              </button>
-            )}
-            {!isLast && !isCropping && (
-              <button 
-                onClick={onNext}
-                className="absolute right-6 p-4 bg-gray-900/50 hover:bg-gray-900 text-white rounded-full transition-all opacity-0 group-hover:opacity-100 z-10"
-              >
-                <ChevronRight size={24} />
-              </button>
-            )}
-            
-            {!isCropping && (
-              <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-3 z-10">
-                <div className="px-4 py-1.5 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md rounded-full border border-gray-200 dark:border-gray-800 text-xs text-gray-500 dark:text-gray-400">
-                  {editedPage.rotation}° rotation
-                </div>
-              </div>
-            )}
           </div>
 
-          {/* Right: Sidebar Controls - Unified Frame */}
-          <div className="shrink-0 lg:flex-none lg:w-80 border-t lg:border-t-0 lg:border-l border-gray-100 bg-white flex flex-col lg:overflow-hidden">
-            <div className="flex-1 p-4 sm:p-6 space-y-8 lg:overflow-y-auto custom-scrollbar">
-              {/* TRANSFORM SECTION */}
-              <div className="space-y-4">
-                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Transform</label>
+          {/* Right Sidebar - Tools */}
+          <aside className="w-80 border-l border-slate-100 dark:border-saas-border-dark bg-white dark:bg-saas-card-dark p-8 overflow-y-auto custom-scrollbar">
+            <div className="space-y-10">
+              {/* Transform Tools */}
+              <section>
+                <h4 className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] mb-6 flex items-center gap-2">
+                  <Maximize2 size={12} />
+                  Transform
+                </h4>
                 <div className="grid grid-cols-2 gap-3">
                   <button 
                     onClick={() => handleRotate('left')}
-                    className="flex flex-col items-center gap-2 p-3 bg-white hover:bg-gray-50 text-gray-700 rounded-xl transition-all border border-gray-200 shadow-sm"
+                    className="flex flex-col items-center gap-3 p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 hover:bg-saas-accent-light/10 dark:hover:bg-saas-accent-dark/10 text-slate-600 dark:text-slate-300 hover:text-saas-accent-light dark:hover:text-saas-accent-dark transition-all border border-transparent hover:border-saas-accent-light/20 dark:hover:border-saas-accent-dark/20"
                   >
-                    <RotateCcw size={18} />
-                    <span className="text-[10px]">Left 90°</span>
+                    <RotateCcw size={20} />
+                    <span className="text-[10px] font-bold uppercase tracking-wider">Rotate L</span>
                   </button>
                   <button 
                     onClick={() => handleRotate('right')}
-                    className="flex flex-col items-center gap-2 p-3 bg-white hover:bg-gray-50 text-gray-700 rounded-xl transition-all border border-gray-200 shadow-sm"
+                    className="flex flex-col items-center gap-3 p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 hover:bg-saas-accent-light/10 dark:hover:bg-saas-accent-dark/10 text-slate-600 dark:text-slate-300 hover:text-saas-accent-light dark:hover:text-saas-accent-dark transition-all border border-transparent hover:border-saas-accent-light/20 dark:hover:border-saas-accent-dark/20"
                   >
-                    <RotateCw size={18} />
-                    <span className="text-[10px]">Right 90°</span>
+                    <RotateCw size={20} />
+                    <span className="text-[10px] font-bold uppercase tracking-wider">Rotate R</span>
+                  </button>
+                  <button 
+                    onClick={() => setIsCropping(true)}
+                    className="col-span-2 flex items-center justify-center gap-3 p-4 rounded-2xl bg-slate-900 dark:bg-saas-accent-dark text-white hover:brightness-110 transition-all shadow-lg shadow-slate-900/10 dark:shadow-saas-accent-dark/20"
+                  >
+                    <CropIcon size={20} />
+                    <span className="text-xs font-bold uppercase tracking-widest">Crop & Resize</span>
                   </button>
                 </div>
-              </div>
+              </section>
 
-              {/* CROP SECTION */}
-              <div className="space-y-4 border-t border-gray-100 pt-6">
-                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Crop</label>
-                
-                {!isCropping ? (
-                  <button 
-                    onClick={() => {
-                      setIsCropping(true);
-                      setCropHistory([]);
-                      setHistoryIndex(-1);
-                    }}
-                    className="w-full flex items-center justify-center gap-2 py-3 bg-white hover:bg-gray-50 text-gray-700 rounded-xl text-xs font-bold transition-all border border-gray-200 shadow-sm"
-                  >
-                    <CropIcon size={16} />
-                    Enter Crop Mode
-                  </button>
-                ) : (
-                  <div className="p-4 bg-gray-50 rounded-xl border border-gray-200">
-                    <p className="text-xs text-gray-500 text-center">Use the handles on the image to adjust the crop area.</p>
-                  </div>
-                )}
-              </div>
-
-              {/* ANNOTATE SECTION */}
-              <div className="space-y-4 border-t border-gray-100 pt-6">
-                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Annotate</label>
-                <div className="grid grid-cols-2 gap-3">
-                  <button 
-                    onClick={addTextAnnotation}
-                    className="flex flex-col items-center gap-2 p-3 bg-white hover:bg-gray-50 text-gray-700 rounded-xl transition-all border border-gray-200 shadow-sm"
-                  >
-                    <Type size={18} />
-                    <span className="text-[10px]">Add Text</span>
-                  </button>
-                  <button 
-                    onClick={addRectAnnotation}
-                    className="flex flex-col items-center gap-2 p-3 bg-white hover:bg-gray-50 text-gray-700 rounded-xl transition-all border border-gray-200 shadow-sm"
-                  >
-                    <Square size={18} />
-                    <span className="text-[10px]">Add Box</span>
-                  </button>
-                  <button 
-                    onClick={addImageAnnotation}
-                    className="flex flex-col items-center gap-2 p-3 bg-white hover:bg-gray-50 text-gray-700 rounded-xl transition-all border border-gray-200 shadow-sm"
-                  >
-                    <ImageIcon size={18} />
-                    <span className="text-[10px]">Add Image</span>
-                  </button>
-                </div>
-
-                {selectedAnnotationId && (
-                  <div className="p-4 bg-white rounded-xl border border-brand-400/30 space-y-4 shadow-sm">
-                    <div className="flex justify-between items-center">
-                      <span className="text-[10px] font-bold text-brand-600 uppercase">Edit Selected</span>
-                      <button 
-                        onClick={() => removeAnnotation(selectedAnnotationId)}
-                        className="p-1 hover:bg-red-500/20 text-red-500 rounded transition-colors"
-                      >
-                        <Trash2 size={14} />
-                      </button>
-                    </div>
-
-                    <div className="space-y-3">
-                      {editedPage.annotations?.find(a => a.id === selectedAnnotationId)?.type === 'text' && (
-                        <div>
-                          <label className="text-[10px] text-gray-400 block mb-1">Text Content</label>
-                          <textarea 
-                            value={editedPage.annotations?.find(a => a.id === selectedAnnotationId)?.text || ''}
-                            onChange={(e) => updateAnnotation(selectedAnnotationId, { text: e.target.value })}
-                            className="w-full bg-gray-50 border border-gray-200 rounded-lg p-2 text-xs text-gray-900 outline-none focus:border-brand-400 transition-colors resize-none"
-                            rows={2}
-                          />
-                        </div>
-                      )}
-
-                      <div>
-                        <label className="text-[10px] text-gray-400 block mb-1">Color</label>
-                        <div className="flex gap-2">
-                          {['#ffffff', '#000000', '#ff0000', '#00ff00', '#0000ff', '#ffff00'].map(c => (
-                            <button
-                              key={c}
-                              onClick={() => updateAnnotation(selectedAnnotationId, { color: c })}
-                              className={clsx(
-                                "w-5 h-5 rounded-full border border-gray-200",
-                                editedPage.annotations?.find(a => a.id === selectedAnnotationId)?.color === c && "ring-2 ring-brand-400"
-                              )}
-                              style={{ backgroundColor: c }}
-                            />
-                          ))}
-                        </div>
-                      </div>
-
-                      {editedPage.annotations?.find(a => a.id === selectedAnnotationId)?.type === 'text' && (
-                        <div>
-                          <label className="text-[10px] text-gray-400 block mb-1">Font Size</label>
-                          <input 
-                            type="range"
-                            min={12}
-                            max={72}
-                            value={editedPage.annotations?.find(a => a.id === selectedAnnotationId)?.fontSize || 24}
-                            onChange={(e) => updateAnnotation(selectedAnnotationId, { fontSize: Number(e.target.value) })}
-                            className="w-full h-1 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-brand-400"
-                          />
-                        </div>
-                      )}
-
-                      {(editedPage.annotations?.find(a => a.id === selectedAnnotationId)?.type === 'rect' || editedPage.annotations?.find(a => a.id === selectedAnnotationId)?.type === 'image') && (
-                        <div className="grid grid-cols-2 gap-2">
-                          <div>
-                            <label className="text-[10px] text-gray-400 block mb-1">Width</label>
-                            <input 
-                              type="range"
-                              min={1}
-                              max={100}
-                              value={editedPage.annotations?.find(a => a.id === selectedAnnotationId)?.width || 10}
-                              onChange={(e) => updateAnnotation(selectedAnnotationId, { width: Number(e.target.value) })}
-                              className="w-full h-1 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-brand-400"
-                            />
-                          </div>
-                          <div>
-                            <label className="text-[10px] text-gray-400 block mb-1">Height</label>
-                            <input 
-                              type="range"
-                              min={1}
-                              max={100}
-                              value={editedPage.annotations?.find(a => a.id === selectedAnnotationId)?.height || 10}
-                              onChange={(e) => updateAnnotation(selectedAnnotationId, { height: Number(e.target.value) })}
-                              className="w-full h-1 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-brand-400"
-                            />
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* ADJUST SECTION */}
-              <div className="space-y-6 border-t border-gray-100 pt-6">
-                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Adjust</label>
-                
-                <div className="space-y-4">
+              {/* Adjustments */}
+              <section>
+                <h4 className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] mb-6 flex items-center gap-2">
+                  <Sliders size={12} />
+                  Adjustments
+                </h4>
+                <div className="space-y-6">
                   {[
                     { label: 'Brightness', key: 'brightness' as const },
+                    { label: 'Contrast', key: 'contrast' as const },
+                    { label: 'Saturation', key: 'saturation' as const }
                   ].map((adj) => (
-                    <div key={adj.key} className="space-y-2">
+                    <div key={adj.key} className="space-y-3">
                       <div className="flex justify-between items-center">
-                        <label className="text-[10px] text-gray-400">{adj.label}</label>
-                        <span className="text-[10px] text-gray-500">{editedPage.adjustments[adj.key]}%</span>
+                        <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{adj.label}</span>
+                        <span className="text-[10px] font-bold text-saas-accent-light dark:text-saas-accent-dark">{editedPage.adjustments[adj.key]}%</span>
                       </div>
                       <input 
-                        type="range"
-                        min={0}
-                        max={200}
-                        step={1}
+                        type="range" 
+                        min="0" 
+                        max="200" 
                         value={editedPage.adjustments[adj.key]}
-                        onChange={(e) => handleAdjustment(adj.key, Number(e.target.value))}
-                        className="w-full h-1 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-brand-400"
+                        onChange={(e) => handleAdjustment(adj.key, parseInt(e.target.value))}
+                        className="w-full h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full appearance-none cursor-pointer accent-saas-accent-light dark:accent-saas-accent-dark"
                       />
                     </div>
                   ))}
                 </div>
+              </section>
 
-                <div className="space-y-3">
-                  <label className="text-[10px] text-gray-400 block mb-1 uppercase tracking-widest font-bold">Filters</label>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                    {[
-                      { label: 'Original', value: 'none' },
-                      { label: 'Grayscale', value: 'grayscale' },
-                      { label: 'Punch', value: 'punch' },
-                      { label: 'Golden', value: 'golden' },
-                      { label: 'Radiate', value: 'radiate' },
-                      { label: 'Warm Contrast', value: 'warm-contrast' },
-                      { label: 'Calm', value: 'calm' },
-                      { label: 'Cool Light', value: 'cool-light' },
-                      { label: 'Vivid Cool', value: 'vivid-cool' },
-                      { label: 'Dramatic Cool', value: 'dramatic-cool' },
-                    ].map((f) => (
-                      <button
-                        key={f.value}
-                        onClick={() => handleFilter(f.value as any)}
-                        className={clsx(
-                          "px-3 py-2 text-[10px] font-bold rounded-lg border transition-all",
-                          editedPage.filter === f.value || (!editedPage.filter && f.value === 'none')
-                            ? "bg-brand-600 text-white border-brand-600"
-                            : "bg-white text-gray-600 border-gray-200 hover:border-brand-400"
-                        )}
-                      >
-                        {f.label}
-                      </button>
-                    ))}
-                  </div>
+              {/* Filters */}
+              <section>
+                <h4 className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] mb-6 flex items-center gap-2">
+                  <Palette size={12} />
+                  Filters
+                </h4>
+                <div className="grid grid-cols-3 gap-2">
+                  {['none', 'grayscale', 'punch', 'golden', 'radiate', 'warm-contrast', 'calm', 'cool-light', 'vivid-cool'].map((f) => (
+                    <button
+                      key={f}
+                      onClick={() => handleFilter(f as any)}
+                      className={clsx(
+                        "px-2 py-3 rounded-xl text-[9px] font-bold uppercase tracking-tighter transition-all border",
+                        editedPage.filter === f 
+                          ? "bg-saas-accent-light dark:bg-saas-accent-dark text-white border-saas-accent-light dark:border-saas-accent-dark shadow-lg shadow-saas-accent-light/20" 
+                          : "bg-slate-50 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400 border-transparent hover:bg-slate-100 dark:hover:bg-slate-800"
+                      )}
+                    >
+                      {f.replace('-', ' ')}
+                    </button>
+                  ))}
                 </div>
-              </div>
-            </div>
+              </section>
 
-            {/* Footer Sidebar */}
-            <div className="p-6 border-t border-gray-100 space-y-3">
-              <button 
-                onClick={() => onSave(editedPage)}
-                className="w-full flex items-center justify-center gap-2 py-3 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-sm font-bold transition-all shadow-lg shadow-brand-600/20"
-              >
-                <Check size={18} />
-                Save & Close
-              </button>
-              <button 
-                onClick={() => onDelete(page.id)}
-                className="w-full flex items-center justify-center gap-2 py-3 bg-red-50 hover:bg-red-100 text-red-600 rounded-xl text-sm font-bold transition-all border border-red-100"
-              >
-                <Trash2 size={18} />
-                Delete Page
-              </button>
+              {/* Annotations */}
+              <section>
+                <h4 className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] mb-6 flex items-center gap-2">
+                  <Layers size={12} />
+                  Annotations
+                </h4>
+                <div className="grid grid-cols-3 gap-3">
+                  <button onClick={addTextAnnotation} className="flex flex-col items-center gap-2 p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 text-slate-500 hover:text-saas-accent-light transition-all border border-transparent hover:border-saas-accent-light/20">
+                    <Type size={18} />
+                    <span className="text-[8px] font-bold uppercase">Text</span>
+                  </button>
+                  <button onClick={addRectAnnotation} className="flex flex-col items-center gap-2 p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 text-slate-500 hover:text-saas-accent-light transition-all border border-transparent hover:border-saas-accent-light/20">
+                    <Square size={18} />
+                    <span className="text-[8px] font-bold uppercase">Shape</span>
+                  </button>
+                  <button onClick={addImageAnnotation} className="flex flex-col items-center gap-2 p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 text-slate-500 hover:text-saas-accent-light transition-all border border-transparent hover:border-saas-accent-light/20">
+                    <ImageIcon size={18} />
+                    <span className="text-[8px] font-bold uppercase">Image</span>
+                  </button>
+                </div>
+              </section>
             </div>
-          </div>
+          </aside>
         </div>
       </motion.div>
+
+      {/* Crop Overlay */}
+      <AnimatePresence>
+        {isCropping && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[300] bg-zinc-950 flex flex-col"
+          >
+            <div className="flex-1 flex items-center justify-center p-8 overflow-auto custom-scrollbar">
+              <div style={{ width: `${100 * zoom}%`, transition: 'width 0.2s ease-out' }}>
+                <ReactCrop
+                  crop={crop}
+                  onChange={c => setCrop(c)}
+                  onComplete={c => setCompletedCrop(c)}
+                  aspect={aspect}
+                  ruleOfThirds={showGrid}
+                >
+                  <img
+                    ref={imgRef}
+                    src={editedPage.dataUrl}
+                    alt="Crop Preview"
+                    onLoad={onImageLoad}
+                    className="w-full h-auto"
+                    style={{ 
+                      transform: `rotate(${editedPage.rotation}deg)`,
+                      filter: `brightness(${editedPage.adjustments.brightness}%) contrast(${editedPage.adjustments.contrast}%) saturate(${editedPage.adjustments.saturation}%)`
+                    }}
+                  />
+                </ReactCrop>
+              </div>
+            </div>
+            
+            <div className="bg-zinc-900 border-t border-zinc-800 p-8 flex items-center justify-between">
+              <div className="flex items-center gap-8">
+                <div className="flex items-center gap-3 bg-zinc-800 rounded-xl p-1">
+                  <button onClick={() => handleZoom('out')} className="p-3 hover:bg-zinc-700 text-zinc-400 rounded-lg transition-all"><ZoomOut size={20} /></button>
+                  <button onClick={() => handleZoom('in')} className="p-3 hover:bg-zinc-700 text-zinc-400 rounded-lg transition-all"><ZoomIn size={20} /></button>
+                </div>
+                <button 
+                  onClick={handleSmartSuggest}
+                  disabled={isDetecting}
+                  className="flex items-center gap-2 px-6 py-3 bg-zinc-800 hover:bg-zinc-700 text-emerald-500 rounded-xl font-bold text-xs uppercase tracking-widest transition-all border border-emerald-500/20"
+                >
+                  <Sparkles size={18} className={isDetecting ? "animate-spin" : ""} />
+                  AI Auto Crop
+                </button>
+              </div>
+              
+              <div className="flex items-center gap-4">
+                <button onClick={() => setIsCropping(false)} className="px-6 py-3 text-zinc-500 hover:text-white font-bold text-xs uppercase tracking-widest transition-colors">Cancel</button>
+                <button onClick={handleApplyCrop} className="flex items-center gap-2 px-8 py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-bold text-xs uppercase tracking-widest shadow-lg shadow-emerald-600/20 transition-all">
+                  <Check size={18} />
+                  Apply Crop
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
