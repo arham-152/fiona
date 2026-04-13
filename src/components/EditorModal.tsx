@@ -152,7 +152,7 @@ export const EditorModal: React.FC<EditorModalProps> = ({
           initial={{ opacity: 0, scale: 0.95, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 20 }}
-          className="relative w-full h-full max-w-[1600px] bg-white dark:bg-dark-bg sm:rounded-[40px] shadow-[0_32px_128px_-16px_rgba(0,0,0,0.3)] overflow-hidden flex flex-col border border-white/20 dark:border-dark-border"
+          className="relative w-full h-full max-w-[1600px] bg-white dark:bg-dark-bg sm:rounded-[40px] shadow-[0_32px_128px_-16px_rgba(0,0,0,0.3)] overflow-y-auto lg:overflow-hidden flex flex-col border border-white/20 dark:border-dark-border"
         >
           <EditorHeader 
             pageNumber={editedPage.pageNumber}
@@ -164,7 +164,7 @@ export const EditorModal: React.FC<EditorModalProps> = ({
             canRedo={canRedo}
           />
 
-          <div className="flex-1 flex flex-col lg:flex-row overflow-hidden relative">
+          <div className="flex-1 flex flex-col lg:flex-row overflow-visible lg:overflow-hidden relative">
             <EditorCanvas 
               editedPage={editedPage}
               imgRef={imgRef}

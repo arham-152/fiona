@@ -65,7 +65,7 @@ export const EditorSidebar: React.FC<EditorSidebarProps> = ({
   ];
 
   return (
-    <aside className="w-full lg:w-96 border-l border-slate-100 dark:border-dark-border bg-white dark:bg-dark-card flex flex-col shadow-[-20px_0_50px_-20px_rgba(0,0,0,0.05)] z-20">
+    <aside className="w-full lg:w-96 border-t lg:border-t-0 lg:border-l border-slate-100 dark:border-dark-border bg-white dark:bg-dark-card flex flex-col shadow-[-20px_0_50px_-20px_rgba(0,0,0,0.05)] z-20 shrink-0">
       {/* Tabs */}
       <div className="flex p-6 gap-2 border-b border-slate-100 dark:border-dark-border bg-slate-50/50 dark:bg-dark-section/30">
         {(['adjust', 'filter', 'annotate'] as const).map((tab) => (

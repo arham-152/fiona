@@ -23,7 +23,7 @@ export const ConverterGrid: React.FC<ConverterGridProps> = ({
   onSetTheme,
 }) => {
   return (
-    <div className="flex flex-col h-screen bg-light-bg dark:bg-dark-bg transition-colors duration-300 overflow-hidden">
+    <div className="flex flex-col min-h-screen lg:h-screen bg-light-bg dark:bg-dark-bg transition-colors duration-300 overflow-x-hidden">
       {/* Header */}
       <header className="h-24 flex items-center justify-between px-8 border-b border-slate-100 dark:border-dark-border bg-white/80 dark:bg-dark-card/80 backdrop-blur-xl z-30 shrink-0">
         <div className="flex items-center gap-6">
@@ -51,14 +51,14 @@ export const ConverterGrid: React.FC<ConverterGridProps> = ({
       </header>
 
       {/* Success View Area */}
-      <div className="flex-1 flex items-center justify-center p-8 bg-slate-50/50 dark:bg-dark-bg/50 relative overflow-hidden">
+      <div className="flex-1 flex items-center justify-center p-4 sm:p-8 bg-slate-50/50 dark:bg-dark-bg/50 relative overflow-y-auto lg:overflow-hidden">
         {/* Background Decorative Elements */}
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-brand-500/5 blur-[120px] rounded-full pointer-events-none" />
         
         <motion.div 
           initial={{ opacity: 0, scale: 0.9, y: 40 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
-          className="w-full max-w-2xl p-16 bg-white dark:bg-dark-card rounded-[64px] shadow-saas-2xl border border-slate-100 dark:border-dark-border flex flex-col items-center text-center gap-12 relative z-10 overflow-hidden"
+          className="w-full max-w-2xl p-8 sm:p-16 bg-white dark:bg-dark-card rounded-[40px] sm:rounded-[64px] shadow-saas-2xl border border-slate-100 dark:border-dark-border flex flex-col items-center text-center gap-8 sm:gap-12 relative z-10 my-8 lg:my-0"
         >
           <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-brand-500 via-cyan-400 to-brand-500" />
           

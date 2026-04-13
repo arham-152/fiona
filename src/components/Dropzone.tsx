@@ -60,7 +60,7 @@ export const Dropzone: React.FC<DropzoneProps> = ({
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="flex flex-col items-center justify-center min-h-[85vh] p-8 relative"
+      className="flex flex-col items-center justify-center min-h-[85vh] p-4 sm:p-8 relative"
     >
       {/* Theme Toggle for Landing */}
       <div className="absolute top-4 right-4 z-50">
@@ -95,16 +95,16 @@ export const Dropzone: React.FC<DropzoneProps> = ({
       </div>
 
       {/* Tool Selector Bar */}
-      <div className="mb-20 w-full max-w-lg flex flex-col items-center gap-12">
+      <div className="mb-12 sm:mb-20 w-full max-w-lg flex flex-col items-center gap-8 sm:gap-12">
         <motion.div 
           whileHover={{ scale: 1.1, rotate: -5 }}
           whileTap={{ scale: 0.95 }}
           onClick={() => window.location.reload()}
-          className="w-32 h-32 flex items-center justify-center bg-white dark:bg-dark-card rounded-[40px] overflow-hidden shadow-saas-2xl p-4 border border-slate-100 dark:border-dark-border relative group cursor-pointer"
+          className="w-24 h-24 sm:w-32 sm:h-32 flex items-center justify-center bg-white dark:bg-dark-card rounded-[32px] sm:rounded-[40px] overflow-hidden shadow-saas-2xl p-4 border border-slate-100 dark:border-dark-border relative group cursor-pointer"
         >
           <div className="absolute inset-0 bg-gradient-to-br from-brand-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
           {logoError ? (
-            <div className="text-brand-600 dark:text-brand-500 font-black text-3xl tracking-tighter relative z-10">DOC</div>
+            <div className="text-brand-600 dark:text-brand-500 font-black text-2xl sm:text-3xl tracking-tighter relative z-10">DOC</div>
           ) : (
             <img 
               src="/logo.png" 
@@ -118,19 +118,19 @@ export const Dropzone: React.FC<DropzoneProps> = ({
         <div className="relative w-full">
           <button 
             onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-            className="flex items-center justify-between p-5 glass rounded-[32px] shadow-saas-xl w-full group transition-all hover:border-brand-500/50 hover:shadow-saas-2xl"
+            className="flex items-center justify-between p-4 sm:p-5 glass rounded-[24px] sm:rounded-[32px] shadow-saas-xl w-full group transition-all hover:border-brand-500/50 hover:shadow-saas-2xl"
           >
-            <div className="flex items-center gap-6">
-              <div className="p-4 bg-brand-600/10 dark:bg-brand-500/20 text-brand-600 dark:text-brand-400 rounded-2xl group-hover:scale-110 transition-transform duration-500 shadow-inner">
+            <div className="flex items-center gap-4 sm:gap-6">
+              <div className="p-3 sm:p-4 bg-brand-600/10 dark:bg-brand-500/20 text-brand-600 dark:text-brand-400 rounded-xl sm:rounded-2xl group-hover:scale-110 transition-transform duration-500 shadow-inner">
                 {currentTool.icon}
               </div>
               <div className="flex flex-col text-left">
-                <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.3em] mb-1">Active Tool</span>
-                <span className="text-lg font-bold text-slate-900 dark:text-white tracking-tight">{currentTool.name}</span>
+                <span className="text-[9px] sm:text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.3em] mb-1">Active Tool</span>
+                <span className="text-base sm:text-lg font-bold text-slate-900 dark:text-white tracking-tight">{currentTool.name}</span>
               </div>
             </div>
-            <div className={clsx("pr-4 text-slate-300 dark:text-slate-600 transition-transform duration-500", isDropdownOpen && "rotate-180")}>
-              <ChevronDown size={24} strokeWidth={2.5} />
+            <div className={clsx("pr-2 sm:pr-4 text-slate-300 dark:text-slate-600 transition-transform duration-500", isDropdownOpen && "rotate-180")}>
+              <ChevronDown size={20} sm:size={24} strokeWidth={2.5} />
             </div>
           </button>
 

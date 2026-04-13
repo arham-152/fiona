@@ -78,7 +78,7 @@ export const OrganizerGrid: React.FC<OrganizerGridProps> = ({
   };
 
   return (
-    <div className="flex flex-col h-screen bg-light-bg dark:bg-dark-bg transition-colors duration-300 overflow-hidden">
+    <div className="flex flex-col min-h-screen lg:h-screen bg-light-bg dark:bg-dark-bg transition-colors duration-300 overflow-x-hidden">
       <OrganizerHeader 
         pageCount={pages.length}
         isDarkMode={isDarkMode}
@@ -86,7 +86,7 @@ export const OrganizerGrid: React.FC<OrganizerGridProps> = ({
         onClearAll={onClearAll}
       />
 
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 flex overflow-visible lg:overflow-hidden">
         <OrganizerGridArea 
           pages={pages}
           isProcessing={isProcessing}
