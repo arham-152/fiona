@@ -108,19 +108,27 @@ export const EditorModal: React.FC<EditorModalProps> = ({
       if (file) {
         const reader = new FileReader();
         reader.onload = (re) => {
-          const newAnno: Annotation = {
-            id: Math.random().toString(36).substr(2, 9),
-            type: 'image',
-            x: 40,
-            y: 40,
-            width: 20,
-            height: 20,
-            image: re.target?.result as string,
-            color: 'transparent',
+          const img = new Image();
+          img.onload = () => {
+            const aspectRatio = img.width / img.height;
+            const width = 20;
+            const height = width / aspectRatio;
+            
+            const newAnno: Annotation = {
+              id: Math.random().toString(36).substr(2, 9),
+              type: 'image',
+              x: 40,
+              y: 40,
+              width: width,
+              height: height,
+              image: re.target?.result as string,
+              color: 'transparent',
+            };
+            addAnnotation(newAnno);
+            setSelectedAnnotationId(newAnno.id);
+            setActiveTab('annotate');
           };
-          addAnnotation(newAnno);
-          setSelectedAnnotationId(newAnno.id);
-          setActiveTab('annotate');
+          img.src = re.target?.result as string;
         };
         reader.readAsDataURL(file);
       }
@@ -202,6 +210,9 @@ export const EditorModal: React.FC<EditorModalProps> = ({
               onNext={onNext}
               isFirst={isFirst}
               isLast={isLast}
+              selectedAnnotationId={selectedAnnotationId}
+              updateAnnotation={updateAnnotation}
+              commitAnnotationChange={() => addToHistory(editedPage)}
             />
           </div>
         </motion.div>

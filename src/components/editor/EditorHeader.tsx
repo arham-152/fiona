@@ -28,16 +28,18 @@ export const EditorHeader: React.FC<EditorHeaderProps> = ({
     <header className="flex items-center justify-between p-8 border-b border-slate-100 dark:border-dark-border glass relative z-10 shrink-0">
       <div className="flex items-center gap-6">
         <motion.div 
-          whileHover={{ scale: 1.05 }}
-          className="w-12 h-12 flex items-center justify-center bg-white dark:bg-dark-card rounded-2xl overflow-hidden border border-slate-100 dark:border-dark-border shadow-lg"
+          whileHover={{ scale: 1.1, rotate: -5 }}
+          whileTap={{ scale: 0.95 }}
+          onClick={() => window.location.reload()}
+          className="w-14 h-14 flex items-center justify-center relative group cursor-pointer"
         >
           {logoError ? (
-            <div className="text-brand-600 dark:text-brand-500 font-black text-xs tracking-tighter">DOC</div>
+            <div className="text-brand-600 dark:text-brand-500 font-black text-xl tracking-tighter relative z-10">DOC</div>
           ) : (
             <img 
               src="/logo.png" 
               alt="Logo" 
-              className="w-full h-full object-contain"
+              className="w-full h-full object-contain relative z-10 filter drop-shadow-lg"
               onError={() => setLogoError(true)}
             />
           )}

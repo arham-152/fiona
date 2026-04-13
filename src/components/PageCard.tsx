@@ -2,9 +2,8 @@ import React from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { PageItem } from '../types';
-import { ArrowUpRight, RotateCw, X } from 'lucide-react';
+import { ArrowUpRight, RotateCw, X, GripVertical } from 'lucide-react';
 import { clsx } from 'clsx';
-import { motion } from 'motion/react';
 
 interface PageCardProps {
   page: PageItem;
@@ -34,27 +33,27 @@ export const PageCard: React.FC<PageCardProps> = React.memo(({ page, onEdit, onD
       ref={setNodeRef}
       style={{ ...style, borderColor: page.color }}
       onDoubleClick={() => onEdit(page)}
+      {...attributes}
+      {...listeners}
       className={clsx(
-        "group relative aspect-[3/4] bg-white dark:bg-dark-card rounded-[40px] overflow-hidden border-[6px] transition-all duration-300 cursor-pointer shadow-sm",
+        "group relative aspect-[3/4] bg-zinc-900 rounded-2xl overflow-hidden border-2 transition-all cursor-grab active:cursor-grabbing shadow-xl",
         isDragging 
-          ? "opacity-50 scale-105 border-brand-500 glow-accent" 
-          : "hover:scale-[1.03] hover:-translate-y-1 hover:border-brand-500 hover:shadow-[0_0_20px_rgba(99,102,241,0.3)]"
+          ? "opacity-50 scale-105 border-brand-500" 
+          : "hover:border-brand-500 border-zinc-800"
       )}
     >
       {/* Image Container */}
       <div 
-        {...attributes} 
-        {...listeners}
-        className="w-full h-full cursor-grab active:cursor-grabbing overflow-hidden relative bg-slate-50 dark:bg-dark-section"
+        className="w-full h-full overflow-hidden relative bg-zinc-950 p-2"
       >
         <div 
-          className="w-full h-full transition-transform duration-500 ease-out"
+          className="w-full h-full relative rounded-lg overflow-hidden"
           style={{ transform: `rotate(${page.rotation}deg)` }}
         >
           <img
             src={page.dataUrl}
             alt={`Page ${page.pageNumber}`}
-            className="w-full h-full object-cover"
+            className="w-full h-full object-contain"
             loading="lazy"
             style={{ 
               filter: `brightness(${page.adjustments.brightness}%) contrast(${page.adjustments.contrast}%) saturate(${page.adjustments.saturation}%) ${
@@ -81,12 +80,13 @@ export const PageCard: React.FC<PageCardProps> = React.memo(({ page, onEdit, onD
                 style={{
                   left: `${anno.x}%`,
                   top: `${anno.y}%`,
-                  width: anno.type === 'rect' ? `${anno.width}%` : 'auto',
-                  height: anno.type === 'rect' ? `${anno.height}%` : 'auto',
+                  width: (anno.type === 'rect' || anno.type === 'image') ? `${anno.width}%` : 'auto',
+                  height: (anno.type === 'rect' || anno.type === 'image') ? `${anno.height}%` : 'auto',
                   backgroundColor: anno.type === 'rect' ? anno.color : 'transparent',
                   color: anno.type === 'text' ? anno.color : 'inherit',
                   fontSize: anno.type === 'text' ? `${Math.max(4, anno.fontSize! / 4)}px` : 'inherit',
-                  fontWeight: anno.type === 'text' ? 'bold' : 'normal',
+                  fontWeight: anno.type === 'text' ? (anno.fontWeight || 'bold') : 'normal',
+                  fontFamily: anno.type === 'text' ? (anno.fontFamily || 'sans-serif') : 'inherit',
                 }}
               >
                 {anno.type === 'text' && (
@@ -94,62 +94,63 @@ export const PageCard: React.FC<PageCardProps> = React.memo(({ page, onEdit, onD
                     {anno.text}
                   </div>
                 )}
+                {anno.type === 'image' && anno.image && (
+                  <img src={anno.image} alt="Annotation" className="w-full h-full object-contain" />
+                )}
               </div>
             ))}
           </div>
         </div>
+
+        {/* Hover Overlay with Prominent Edit Button */}
+        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center z-10 pointer-events-none">
+          <button 
+            onClick={(e) => {
+              e.stopPropagation();
+              onEdit(page);
+            }}
+            className="px-6 py-2.5 bg-brand-500 hover:bg-brand-600 text-white rounded-full font-black text-xs uppercase tracking-widest shadow-xl transform scale-90 group-hover:scale-100 transition-all duration-300 flex items-center gap-2 pointer-events-auto"
+          >
+            <ArrowUpRight size={16} strokeWidth={3} />
+            Edit Page
+          </button>
+        </div>
+
+        {/* Rotate Button (Bottom Left of Image Area) */}
+        <button 
+          onClick={(e) => {
+            e.stopPropagation();
+            onRotate(page.id);
+          }}
+          className="absolute bottom-4 left-4 w-8 h-8 bg-black/60 backdrop-blur-md rounded-lg flex items-center justify-center text-white/60 hover:text-white transition-all opacity-0 group-hover:opacity-100 z-20"
+          title="Rotate"
+        >
+          <RotateCw size={16} />
+        </button>
+
+        {/* Delete Button (Moved to Bottom Right of Image Area) */}
+        <button 
+          onClick={(e) => {
+            e.stopPropagation();
+            onDelete(page.id);
+          }}
+          className="absolute bottom-4 right-4 w-8 h-8 flex items-center justify-center bg-red-500/80 hover:bg-red-500 text-white rounded-lg shadow-lg opacity-0 group-hover:opacity-100 z-20 transition-all"
+          title="Delete Page"
+        >
+          <X size={16} strokeWidth={3} />
+        </button>
       </div>
 
-      {/* Overlay Controls */}
-      <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-all duration-300 flex flex-col justify-between p-4 pointer-events-none backdrop-blur-[4px]">
-        <div className="flex justify-end items-start gap-2 pointer-events-auto">
-          <motion.button 
-            initial={{ opacity: 0, scale: 0.95 }}
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            onClick={() => onRotate(page.id)}
-            className="w-10 h-10 flex items-center justify-center bg-white/90 dark:bg-black/70 text-slate-900 dark:text-white rounded-full transition-colors shadow-[0_4px_10px_rgba(0,0,0,0.3)] border border-white/20 dark:border-white/10"
-            title="Quick Rotate"
-          >
-            <RotateCw size={18} strokeWidth={2.5} />
-          </motion.button>
-          <motion.button 
-            initial={{ opacity: 0, scale: 0.95 }}
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            onClick={() => onEdit(page)}
-            className="w-10 h-10 flex items-center justify-center bg-white/90 dark:bg-black/70 text-slate-900 dark:text-white rounded-full transition-colors shadow-[0_4px_10px_rgba(0,0,0,0.3)] border border-white/20 dark:border-white/10"
-            title="Open Editor"
-          >
-            <ArrowUpRight size={20} strokeWidth={3} />
-          </motion.button>
-          <motion.button 
-            initial={{ opacity: 0, scale: 0.95 }}
-            whileHover={{ scale: 1.1, rotate: 90 }}
-            whileTap={{ scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            onClick={() => onDelete(page.id)}
-            className="w-10 h-10 flex items-center justify-center bg-red-500 hover:bg-red-600 text-white rounded-full transition-colors shadow-[0_4px_10px_rgba(0,0,0,0.3)]"
-            title="Delete Page"
-          >
-            <X size={20} strokeWidth={3} />
-          </motion.button>
+      {/* Info (Bottom) */}
+      <div className="px-4 py-3 bg-zinc-900 border-t border-zinc-800">
+        <div className="flex items-center justify-between">
+          <span className="text-[10px] font-bold text-zinc-400 truncate uppercase tracking-widest max-w-[120px]">
+            {page.originalFileName}
+          </span>
+          <span className="text-[10px] font-black text-zinc-600">
+            P{page.pageNumber}
+          </span>
         </div>
-        
-        <div className="flex justify-start items-end pointer-events-auto">
-          <div className="flex items-center gap-2.5 bg-black/40 backdrop-blur-md px-4 py-2 rounded-2xl border border-white/10">
-            <span className="text-[10px] font-black text-white truncate max-w-[140px] tracking-tight uppercase">
-              {page.originalFileName}
-            </span>
-          </div>
-        </div>
-      </div>
-
-      {/* Page Number Badge */}
-      <div className="absolute bottom-5 right-5 px-3 py-1.5 glass text-slate-900 dark:text-white text-[11px] font-black rounded-2xl border border-white/20 dark:border-white/10 uppercase tracking-tighter shadow-2xl">
-        P{page.pageNumber}
       </div>
     </div>
   );

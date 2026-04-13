@@ -188,16 +188,22 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = ({
             className="relative transition-transform duration-500 ease-out flex items-center justify-center group"
             style={{ 
               transform: `rotate(${editedPage.rotation}deg)`,
-              width: '100%',
-              height: '100%',
             }}
           >
             <img
               src={editedPage.dataUrl}
               alt="Editor Preview"
-              className="shadow-2xl object-contain transition-all rounded-lg max-w-full max-h-full"
+              className="shadow-2xl transition-all rounded-lg max-w-full max-h-[70vh] lg:max-h-[80vh] object-contain block"
               style={{ filter: filterStyle.filter }}
               referrerPolicy="no-referrer"
+              onLoad={(e) => {
+                // Trigger a re-render to ensure annotation layer matches image bounds
+                const img = e.currentTarget;
+                if (imgRef.current !== img) {
+                  // @ts-ignore
+                  imgRef.current = img;
+                }
+              }}
             />
             
             {/* Annotations Layer */}
@@ -213,12 +219,13 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = ({
                   style={{
                     left: `${anno.x}%`,
                     top: `${anno.y}%`,
-                    width: anno.type === 'rect' ? `${anno.width}%` : 'auto',
-                    height: anno.type === 'rect' ? `${anno.height}%` : 'auto',
+                    width: (anno.type === 'rect' || anno.type === 'image') ? `${anno.width}%` : 'auto',
+                    height: (anno.type === 'rect' || anno.type === 'image') ? `${anno.height}%` : 'auto',
                     backgroundColor: anno.type === 'rect' ? anno.color : 'transparent',
                     color: anno.type === 'text' ? anno.color : 'inherit',
                     fontSize: anno.type === 'text' ? `${anno.fontSize}px` : 'inherit',
-                    fontWeight: anno.type === 'text' ? 'bold' : 'normal',
+                    fontWeight: anno.type === 'text' ? (anno.fontWeight || 'bold') : 'normal',
+                    fontFamily: anno.type === 'text' ? (anno.fontFamily || 'sans-serif') : 'inherit',
                     zIndex: selectedAnnotationId === anno.id ? 30 : 20,
                     borderRadius: anno.type === 'rect' ? '4px' : '0'
                   }}
@@ -228,36 +235,84 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = ({
                   }}
                   onMouseDown={(e) => {
                     if (selectedAnnotationId !== anno.id || editingAnnotationId === anno.id) return;
+                    
+                    // Check if clicking a resize handle
+                    const target = e.target as HTMLElement;
+                    const isHandle = target.dataset.handle;
+                    
                     const startX = e.clientX;
                     const startY = e.clientY;
                     const initialX = anno.x;
                     const initialY = anno.y;
+                    const initialWidth = anno.width || 0;
+                    const initialHeight = anno.height || 0;
+                    
                     const rotationRad = (editedPage.rotation * Math.PI) / 180;
                     let hasMoved = false;
 
                     const onMouseMove = (moveEvent: MouseEvent) => {
-                      const container = containerRef.current;
-                      if (!container) return;
+                      // Use imgRef to get the actual displayed dimensions of the page
+                      const img = imgRef.current;
+                      if (!img) return;
                       
                       const rawDx = moveEvent.clientX - startX;
                       const rawDy = moveEvent.clientY - startY;
                       
-                      const dx = (rawDx * Math.cos(-rotationRad) - rawDy * Math.sin(-rotationRad)) / container.clientWidth * 100;
-                      const dy = (rawDx * Math.sin(-rotationRad) + rawDy * Math.cos(-rotationRad)) / container.clientHeight * 100;
+                      // Rotate delta back to match image rotation
+                      const dx = (rawDx * Math.cos(-rotationRad) - rawDy * Math.sin(-rotationRad)) / img.clientWidth * 100;
+                      const dy = (rawDx * Math.sin(-rotationRad) + rawDy * Math.cos(-rotationRad)) / img.clientHeight * 100;
                       
-                      if (Math.abs(dx) > 0.1 || Math.abs(dy) > 0.1) {
-                        hasMoved = true;
-                        updateAnnotation(anno.id, {
-                          x: Math.max(0, Math.min(100, initialX + dx)),
-                          y: Math.max(0, Math.min(100, initialY + dy))
-                        });
+                      if (isHandle) {
+                        const updates: Partial<Annotation> = {};
+                        let newWidth = initialWidth;
+                        let newHeight = initialHeight;
+                        let newX = initialX;
+                        let newY = initialY;
+
+                        if (isHandle.includes('right')) newWidth = initialWidth + dx;
+                        if (isHandle.includes('bottom')) newHeight = initialHeight + dy;
+                        if (isHandle.includes('left')) {
+                          newWidth = initialWidth - dx;
+                          newX = initialX + (initialWidth - newWidth);
+                        }
+                        if (isHandle.includes('top')) {
+                          newHeight = initialHeight - dy;
+                          newY = initialY + (initialHeight - newHeight);
+                        }
+
+                        // Maintain aspect ratio for images if dragging a corner
+                        if (anno.type === 'image' && isHandle.includes('-')) {
+                          const aspectRatio = initialWidth / initialHeight;
+                          if (Math.abs(dx) > Math.abs(dy)) {
+                            newHeight = newWidth / aspectRatio;
+                            if (isHandle.includes('top')) newY = initialY + (initialHeight - newHeight);
+                          } else {
+                            newWidth = newHeight * aspectRatio;
+                            if (isHandle.includes('left')) newX = initialX + (initialWidth - newWidth);
+                          }
+                        }
+
+                        updates.width = Math.max(2, newWidth);
+                        updates.height = Math.max(2, newHeight);
+                        updates.x = Math.max(0, Math.min(100, newX));
+                        updates.y = Math.max(0, Math.min(100, newY));
+                        
+                        updateAnnotation(anno.id, updates);
+                      } else {
+                        if (Math.abs(dx) > 0.1 || Math.abs(dy) > 0.1) {
+                          hasMoved = true;
+                          updateAnnotation(anno.id, {
+                            x: Math.max(0, Math.min(100, initialX + dx)),
+                            y: Math.max(0, Math.min(100, initialY + dy))
+                          });
+                        }
                       }
                     };
 
                     const onMouseUp = () => {
                       document.removeEventListener('mousemove', onMouseMove);
                       document.removeEventListener('mouseup', onMouseUp);
-                      if (hasMoved) commitAnnotationChange();
+                      commitAnnotationChange();
                     };
 
                     document.addEventListener('mousemove', onMouseMove);
@@ -267,14 +322,6 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = ({
                   {anno.type === 'text' && (
                     <div 
                       className="whitespace-nowrap px-2 py-1 select-none leading-tight"
-                      onDoubleClick={(e) => {
-                        e.stopPropagation();
-                        const newText = prompt('Enter text:', anno.text);
-                        if (newText !== null) {
-                          updateAnnotation(anno.id, { text: newText });
-                          commitAnnotationChange();
-                        }
-                      }}
                     >
                       {anno.text}
                     </div>
@@ -284,14 +331,32 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = ({
                   )}
                   
                   {selectedAnnotationId === anno.id && (
-                    <div className="absolute -top-10 left-1/2 -translate-x-1/2 flex items-center gap-1.5 p-1.5 glass rounded-xl shadow-xl z-50">
-                      <IconButton 
-                        icon={<Trash2 size={14} />}
-                        variant="danger"
-                        size="sm"
-                        onClick={() => removeAnnotation(anno.id)}
-                      />
-                    </div>
+                    <>
+                      {/* Resize Handles */}
+                      {(anno.type === 'rect' || anno.type === 'image') && (
+                        <>
+                          <div data-handle="top-left" className="absolute -top-1.5 -left-1.5 w-3 h-3 bg-white border-2 border-brand-500 rounded-full cursor-nwse-resize z-50" />
+                          <div data-handle="top-right" className="absolute -top-1.5 -right-1.5 w-3 h-3 bg-white border-2 border-brand-500 rounded-full cursor-nesw-resize z-50" />
+                          <div data-handle="bottom-left" className="absolute -bottom-1.5 -left-1.5 w-3 h-3 bg-white border-2 border-brand-500 rounded-full cursor-nesw-resize z-50" />
+                          <div data-handle="bottom-right" className="absolute -bottom-1.5 -right-1.5 w-3 h-3 bg-white border-2 border-brand-500 rounded-full cursor-nwse-resize z-50" />
+                          
+                          <div data-handle="right" className="absolute top-1/2 -right-1.5 -translate-y-1/2 w-1.5 h-6 bg-brand-500 rounded-full cursor-ew-resize z-50" />
+                          <div data-handle="bottom" className="absolute left-1/2 -bottom-1.5 -translate-x-1/2 w-6 h-1.5 bg-brand-500 rounded-full cursor-ns-resize z-50" />
+                        </>
+                      )}
+
+                      <div className="absolute -top-12 left-1/2 -translate-x-1/2 flex items-center gap-1.5 p-1.5 glass rounded-xl shadow-xl z-50 pointer-events-auto">
+                        <IconButton 
+                          icon={<Trash2 size={14} />}
+                          variant="danger"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            removeAnnotation(anno.id);
+                          }}
+                        />
+                      </div>
+                    </>
                   )}
                 </div>
               ))}

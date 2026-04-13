@@ -6,7 +6,7 @@ import {
   RefreshCcw, Trash2, ChevronLeft, ChevronRight, Check
 } from 'lucide-react';
 import { clsx } from 'clsx';
-import { PageItem } from '../../types';
+import { PageItem, Annotation } from '../../types';
 
 interface EditorSidebarProps {
   activeTab: 'adjust' | 'filter' | 'annotate';
@@ -25,6 +25,9 @@ interface EditorSidebarProps {
   onNext?: () => void;
   isFirst?: boolean;
   isLast?: boolean;
+  selectedAnnotationId: string | null;
+  updateAnnotation: (id: string, updates: Partial<Annotation>) => void;
+  commitAnnotationChange: () => void;
 }
 
 export const EditorSidebar: React.FC<EditorSidebarProps> = ({
@@ -44,6 +47,9 @@ export const EditorSidebar: React.FC<EditorSidebarProps> = ({
   onNext,
   isFirst,
   isLast,
+  selectedAnnotationId,
+  updateAnnotation,
+  commitAnnotationChange,
 }) => {
   const filters: { name: string; value: PageItem['filter'] }[] = [
     { name: 'None', value: 'none' },
@@ -225,6 +231,117 @@ export const EditorSidebar: React.FC<EditorSidebarProps> = ({
                 <span className="text-[11px] font-black uppercase tracking-[0.2em]">Add Image</span>
               </motion.button>
             </div>
+
+            {selectedAnnotationId && (
+              <motion.div 
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="p-6 bg-slate-100 dark:bg-dark-section rounded-3xl border border-slate-200 dark:border-dark-border space-y-6"
+              >
+                <div className="flex items-center justify-between">
+                  <h4 className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.3em]">Edit Annotation</h4>
+                  <div className="px-2 py-0.5 bg-brand-500/10 text-brand-600 dark:text-brand-400 text-[9px] font-black rounded-md uppercase tracking-widest">
+                    {editedPage.annotations?.find(a => a.id === selectedAnnotationId)?.type}
+                  </div>
+                </div>
+
+                {editedPage.annotations?.find(a => a.id === selectedAnnotationId)?.type === 'text' && (
+                  <div className="space-y-5">
+                    <div className="space-y-3">
+                      <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Text Content</label>
+                      <textarea
+                        value={editedPage.annotations?.find(a => a.id === selectedAnnotationId)?.text || ''}
+                        onChange={(e) => updateAnnotation(selectedAnnotationId, { text: e.target.value })}
+                        onBlur={commitAnnotationChange}
+                        className="w-full p-4 bg-white dark:bg-dark-card border border-slate-200 dark:border-dark-border rounded-xl text-sm focus:ring-2 focus:ring-brand-500 outline-none transition-all resize-none"
+                        rows={3}
+                      />
+                    </div>
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-center">
+                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Font Size</label>
+                        <span className="text-[10px] font-black text-brand-600 dark:text-brand-400">{editedPage.annotations?.find(a => a.id === selectedAnnotationId)?.fontSize}px</span>
+                      </div>
+                      <input
+                        type="range"
+                        min="8"
+                        max="120"
+                        value={editedPage.annotations?.find(a => a.id === selectedAnnotationId)?.fontSize || 24}
+                        onChange={(e) => updateAnnotation(selectedAnnotationId, { fontSize: parseInt(e.target.value) })}
+                        onMouseUp={commitAnnotationChange}
+                        className="w-full h-1.5 bg-slate-200 dark:bg-dark-border rounded-lg appearance-none cursor-pointer accent-brand-500"
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-3">
+                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Weight</label>
+                        <select
+                          value={editedPage.annotations?.find(a => a.id === selectedAnnotationId)?.fontWeight || 'bold'}
+                          onChange={(e) => {
+                            updateAnnotation(selectedAnnotationId, { fontWeight: e.target.value });
+                            commitAnnotationChange();
+                          }}
+                          className="w-full p-3 bg-white dark:bg-dark-card border border-slate-200 dark:border-dark-border rounded-xl text-[10px] font-bold uppercase tracking-widest outline-none focus:ring-2 focus:ring-brand-500"
+                        >
+                          <option value="normal">Normal</option>
+                          <option value="medium">Medium</option>
+                          <option value="bold">Bold</option>
+                          <option value="black">Black</option>
+                        </select>
+                      </div>
+                      <div className="space-y-3">
+                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Font</label>
+                        <select
+                          value={editedPage.annotations?.find(a => a.id === selectedAnnotationId)?.fontFamily || 'sans-serif'}
+                          onChange={(e) => {
+                            updateAnnotation(selectedAnnotationId, { fontFamily: e.target.value });
+                            commitAnnotationChange();
+                          }}
+                          className="w-full p-3 bg-white dark:bg-dark-card border border-slate-200 dark:border-dark-border rounded-xl text-[10px] font-bold uppercase tracking-widest outline-none focus:ring-2 focus:ring-brand-500"
+                        >
+                          <option value="sans-serif">Sans Serif</option>
+                          <option value="serif">Serif</option>
+                          <option value="monospace">Monospace</option>
+                          <option value="cursive">Cursive</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {(editedPage.annotations?.find(a => a.id === selectedAnnotationId)?.type === 'text' || 
+                  editedPage.annotations?.find(a => a.id === selectedAnnotationId)?.type === 'rect') && (
+                  <div className="space-y-3">
+                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Color</label>
+                    <div className="flex flex-wrap gap-2">
+                      {['#000000', '#FFFFFF', '#6366F1', '#EF4444', '#10B981', '#F59E0B', '#3B82F6', '#8B5CF6'].map(c => (
+                        <button
+                          key={c}
+                          onClick={() => {
+                            updateAnnotation(selectedAnnotationId, { color: c });
+                            commitAnnotationChange();
+                          }}
+                          className={clsx(
+                            "w-8 h-8 rounded-full border-2 transition-all",
+                            editedPage.annotations?.find(a => a.id === selectedAnnotationId)?.color === c 
+                              ? "border-brand-500 scale-110 shadow-lg" 
+                              : "border-transparent hover:scale-105"
+                          )}
+                          style={{ backgroundColor: c }}
+                        />
+                      ))}
+                      <input 
+                        type="color" 
+                        value={editedPage.annotations?.find(a => a.id === selectedAnnotationId)?.color || '#000000'}
+                        onChange={(e) => updateAnnotation(selectedAnnotationId, { color: e.target.value })}
+                        onBlur={commitAnnotationChange}
+                        className="w-8 h-8 rounded-full overflow-hidden border-none p-0 cursor-pointer"
+                      />
+                    </div>
+                  </div>
+                )}
+              </motion.div>
+            )}
             
             <div className="p-6 bg-brand-500/5 dark:bg-brand-500/10 rounded-3xl border border-brand-500/20">
               <p className="text-[10px] text-slate-500 dark:text-slate-400 font-bold leading-relaxed uppercase tracking-wider">

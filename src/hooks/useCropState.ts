@@ -37,14 +37,8 @@ export const useCropState = (editedPage: PageItem, setEditedPage: React.Dispatch
     
     try {
       const image = imgRef.current;
-      const { width: bBoxWidth, height: bBoxHeight } = rotateSize(
-        image.naturalWidth,
-        image.naturalHeight,
-        editedPage.rotation
-      );
-
-      const scaleX = bBoxWidth / image.width;
-      const scaleY = bBoxHeight / image.height;
+      const scaleX = image.naturalWidth / image.width;
+      const scaleY = image.naturalHeight / image.height;
 
       const pixelCrop = {
         x: completedCrop.x * scaleX,
@@ -56,7 +50,7 @@ export const useCropState = (editedPage: PageItem, setEditedPage: React.Dispatch
       const croppedImage = await getCroppedImg(
         editedPage.dataUrl,
         pixelCrop,
-        editedPage.rotation,
+        0, // Crop the original image orientation
         { horizontal: false, vertical: false },
         editedPage.adjustments
       );
@@ -65,8 +59,7 @@ export const useCropState = (editedPage: PageItem, setEditedPage: React.Dispatch
         const updated = {
           ...editedPage,
           dataUrl: croppedImage,
-          rotation: 0,
-          adjustments: { brightness: 100, contrast: 100, saturation: 100 },
+          // Keep the existing rotation so the user's view doesn't jump
           isEdited: true
         };
         setEditedPage(updated);

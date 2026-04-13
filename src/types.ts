@@ -1,3 +1,5 @@
+export type ToolType = 'organizer' | 'converter';
+
 export interface PageItem {
   id: string;
   fileId: string;
@@ -34,6 +36,8 @@ export interface Annotation {
   image?: string; // Data URL for image annotation
   color: string;
   fontSize?: number;
+  fontWeight?: string;
+  fontFamily?: string;
   rotation?: number;
 }
 

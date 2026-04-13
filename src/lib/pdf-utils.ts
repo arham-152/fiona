@@ -159,7 +159,7 @@ function hexToRgb(hex: string) {
   } : { r: 0, g: 0, b: 0 };
 }
 
-async function applyAdjustmentsToImage(pageItem: PageItem): Promise<string> {
+export async function applyAdjustmentsToImage(pageItem: PageItem): Promise<string> {
   // If no adjustments, no filters, and no annotations, return original dataUrl to save memory and avoid canvas issues
   const hasAdjustments = pageItem.adjustments && (
     (pageItem.adjustments.brightness !== undefined && pageItem.adjustments.brightness !== 100) || 
@@ -173,10 +173,10 @@ async function applyAdjustmentsToImage(pageItem: PageItem): Promise<string> {
     return pageItem.dataUrl;
   }
 
-  return new Promise((resolve) => {
+  return new Promise(async (resolve) => {
     const img = new Image();
     img.crossOrigin = 'anonymous';
-    img.onload = () => {
+    img.onload = async () => {
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
       if (!ctx) {
@@ -215,33 +215,57 @@ async function applyAdjustmentsToImage(pageItem: PageItem): Promise<string> {
       ctx.filter = 'none';
       
       // Draw annotations
-      pageItem.annotations?.forEach(anno => {
-        const x = (anno.x / 100) * canvas.width;
-        const y = (anno.y / 100) * canvas.height;
-        
-        ctx.save();
-        if (anno.rotation) {
-          ctx.translate(x, y);
-          ctx.rotate((anno.rotation * Math.PI) / 180);
-          ctx.translate(-x, -y);
-        }
+      if (pageItem.annotations && pageItem.annotations.length > 0) {
+        const annotationPromises = pageItem.annotations.map(async anno => {
+          const x = (anno.x / 100) * canvas.width;
+          const y = (anno.y / 100) * canvas.height;
+          
+          ctx.save();
+          
+          // If the annotation itself has rotation
+          if (anno.rotation) {
+            ctx.translate(x, y);
+            ctx.rotate((anno.rotation * Math.PI) / 180);
+            ctx.translate(-x, -y);
+          }
 
-        if (anno.type === 'rect') {
-          const w = (anno.width! / 100) * canvas.width;
-          const h = (anno.height! / 100) * canvas.height;
-          ctx.fillStyle = anno.color;
-          ctx.fillRect(x, y, w, h);
-        } else if (anno.type === 'text') {
-          ctx.fillStyle = anno.color;
-          ctx.font = `bold ${anno.fontSize}px Arial`;
-          ctx.textBaseline = 'top';
-          ctx.fillText(anno.text || '', x, y);
-        } else if (anno.type === 'image' && anno.image) {
-          // Image annotations would need to be loaded as well, but for now we skip or use a placeholder
-          // In a real app, we'd wait for all annotation images to load
-        }
-        ctx.restore();
-      });
+          if (anno.type === 'rect') {
+            const w = (anno.width! / 100) * canvas.width;
+            const h = (anno.height! / 100) * canvas.height;
+            ctx.fillStyle = anno.color || 'rgba(99, 102, 241, 0.3)';
+            ctx.fillRect(x, y, w, h);
+          } else if (anno.type === 'text') {
+            ctx.fillStyle = anno.color || '#000000';
+            // Scale font size based on canvas width
+            const baseScale = canvas.width / 800;
+            const scaledFontSize = (anno.fontSize || 24) * baseScale;
+            
+            ctx.font = `${anno.fontWeight || 'bold'} ${scaledFontSize}px ${anno.fontFamily || 'sans-serif'}`;
+            ctx.textBaseline = 'top';
+            ctx.fillText(anno.text || '', x, y);
+          } else if (anno.type === 'image' && anno.image) {
+            const w = (anno.width! / 100) * canvas.width;
+            const h = (anno.height! / 100) * canvas.height;
+            
+            const annoImg = new Image();
+            annoImg.crossOrigin = 'anonymous';
+            await new Promise((resolveAnno) => {
+              annoImg.onload = () => {
+                ctx.drawImage(annoImg, x, y, w, h);
+                resolveAnno(true);
+              };
+              annoImg.onerror = () => {
+                console.error('Failed to load annotation image');
+                resolveAnno(false);
+              };
+              annoImg.src = anno.image!;
+            });
+          }
+          ctx.restore();
+        });
+
+        await Promise.all(annotationPromises);
+      }
       
       try {
         resolve(canvas.toDataURL('image/jpeg', 1.0)); // High quality JPEG for speed
