@@ -1,7 +1,8 @@
 import React, { useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
-import { Upload, FileText, Image as ImageIcon, Sparkles } from 'lucide-react';
+import { Upload, ChevronDown, LayoutGrid, Sun, Moon } from 'lucide-react';
 import { motion } from 'motion/react';
+import { clsx } from 'clsx';
 
 interface DropzoneProps {
   onFilesAdded: (files: File[]) => void;
@@ -9,7 +10,8 @@ interface DropzoneProps {
   onSetTheme: (dark: boolean) => void;
 }
 
-export const Dropzone: React.FC<DropzoneProps> = ({ onFilesAdded }) => {
+export const Dropzone: React.FC<DropzoneProps> = ({ onFilesAdded, isDarkMode, onSetTheme }) => {
+  const [logoError, setLogoError] = React.useState(false);
   const onDrop = useCallback((acceptedFiles: File[]) => {
     onFilesAdded(acceptedFiles);
   }, [onFilesAdded]);
@@ -24,108 +26,122 @@ export const Dropzone: React.FC<DropzoneProps> = ({ onFilesAdded }) => {
 
   return (
     <motion.div
-      initial={{ opacity: 0, scale: 0.95 }}
-      animate={{ opacity: 1, scale: 1 }}
-      className="w-full max-w-4xl mx-auto"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="flex flex-col items-center justify-center min-h-[85vh] p-8 relative"
     >
-      <div className="text-center mb-12">
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-saas-accent-light/10 dark:bg-saas-accent-dark/10 text-saas-accent-light dark:text-saas-accent-dark text-xs font-bold uppercase tracking-wider mb-6 border border-saas-accent-light/20 dark:border-saas-accent-dark/20"
-        >
-          <Sparkles size={14} />
-          <span>Professional PDF Tools</span>
-        </motion.div>
-        <h1 className="text-5xl sm:text-6xl font-extrabold tracking-tight text-slate-900 dark:text-white mb-6">
-          Organize your documents <br />
-          <span className="bg-clip-text text-transparent bg-gradient-to-r from-saas-accent-light to-indigo-600 dark:from-saas-accent-dark dark:to-saas-glow-dark">
-            with precision.
-          </span>
-        </h1>
-        <p className="text-lg text-slate-500 dark:text-slate-400 max-w-2xl mx-auto leading-relaxed">
-          The most advanced PDF editor for modern teams. Merge, reorder, and edit your documents with 100% quality preservation.
-        </p>
+      {/* Theme Toggle for Landing */}
+      <div className="absolute top-4 right-4 z-50">
+        <div className="flex items-center gap-1 p-1.5 glass rounded-full shadow-xl">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onSetTheme(false);
+            }}
+            className={clsx(
+              "p-2 rounded-full transition-all duration-300",
+              !isDarkMode ? "bg-brand-600 text-white shadow-lg glow-accent scale-110" : "text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+            )}
+            title="Light Mode"
+          >
+            <Sun size={18} />
+          </button>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onSetTheme(true);
+            }}
+            className={clsx(
+              "p-2 rounded-full transition-all duration-300",
+              isDarkMode ? "bg-brand-500 text-white shadow-lg glow-accent scale-110" : "text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+            )}
+            title="Dark Mode"
+          >
+            <Moon size={18} />
+          </button>
+        </div>
       </div>
 
+      {/* Tool Selector Bar */}
+      <div className="mb-16 w-full max-w-md flex flex-col items-center gap-10">
+        <motion.div 
+          whileHover={{ scale: 1.05 }}
+          className="w-28 h-28 flex items-center justify-center bg-white dark:bg-dark-card rounded-3xl overflow-hidden shadow-2xl p-3 border border-slate-100 dark:border-dark-border"
+        >
+          {logoError ? (
+            <div className="text-brand-600 dark:text-brand-500 font-black text-2xl tracking-tighter">DOC</div>
+          ) : (
+            <img 
+              src="/logo.png" 
+              alt="Logo" 
+              className="w-full h-full object-contain"
+              onError={() => setLogoError(true)}
+            />
+          )}
+        </motion.div>
+        
+        <div className="flex items-center justify-between p-4 glass rounded-3xl shadow-2xl w-full group cursor-default">
+          <div className="flex items-center gap-5">
+            <div className="p-3.5 bg-brand-600/10 dark:bg-brand-500/20 text-brand-600 dark:text-brand-400 rounded-2xl group-hover:scale-110 transition-transform duration-300">
+              <LayoutGrid size={24} />
+            </div>
+            <div className="flex flex-col">
+              <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.25em]">Select Tool</span>
+              <span className="text-base font-bold text-slate-900 dark:text-white">Document Organizer</span>
+            </div>
+          </div>
+          <div className="pr-4 text-slate-300 dark:text-slate-600">
+            <ChevronDown size={20} />
+          </div>
+        </div>
+      </div>
+
+      {/* Main Dropzone Area */}
       <motion.div
         {...getRootProps()}
         whileHover={{ scale: 1.01 }}
         whileTap={{ scale: 0.99 }}
-        className={`
-          relative group cursor-pointer
-          p-12 sm:p-20 border-2 border-dashed rounded-[32px] transition-all duration-300
-          flex flex-col items-center justify-center gap-8
-          ${isDragActive 
-            ? 'border-saas-accent-light dark:border-saas-accent-dark bg-saas-accent-light/5 dark:bg-saas-accent-dark/5' 
-            : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-saas-card-dark hover:border-saas-accent-light dark:hover:border-saas-accent-dark hover:shadow-2xl hover:shadow-saas-accent-light/10 dark:hover:shadow-saas-accent-dark/10 shadow-xl shadow-slate-200/50 dark:shadow-none'}
-        `}
+        className={clsx(
+          "relative w-full max-w-3xl aspect-[2/1] border-2 border-dashed rounded-[56px] transition-all duration-500 cursor-pointer flex flex-col items-center justify-center gap-8 group overflow-hidden",
+          isDragActive 
+            ? "border-brand-500 bg-brand-500/5 dark:bg-brand-500/10 scale-[1.02] animate-border-glow" 
+            : "border-slate-200 dark:border-dark-border hover:border-brand-500 bg-white/50 dark:bg-dark-card/30 shadow-2xl backdrop-blur-sm"
+        )}
       >
         <input {...getInputProps()} />
         
-        <div className="relative">
-          <div className="w-24 h-24 rounded-3xl bg-gradient-to-br from-saas-accent-light to-indigo-600 dark:from-saas-accent-dark dark:to-indigo-500 flex items-center justify-center text-white shadow-xl group-hover:scale-110 transition-transform duration-300 glow-accent">
-            <Upload size={40} strokeWidth={2.5} />
-          </div>
-          <motion.div 
-            animate={{ scale: [1, 1.2, 1], opacity: [0.5, 0.8, 0.5] }}
-            transition={{ duration: 2, repeat: Infinity }}
-            className="absolute -inset-4 bg-saas-accent-light/20 dark:bg-saas-accent-dark/20 blur-2xl rounded-full -z-10"
-          />
+        {/* Decorative Background Glows */}
+        <div className="absolute -top-24 -left-24 w-64 h-64 bg-brand-500/10 dark:bg-brand-500/5 rounded-full blur-3xl group-hover:bg-brand-500/20 transition-colors duration-700" />
+        <div className="absolute -bottom-24 -right-24 w-64 h-64 bg-cyan-500/10 dark:bg-cyan-500/5 rounded-full blur-3xl group-hover:bg-cyan-500/20 transition-colors duration-700" />
+
+        <div className={clsx(
+          "w-28 h-28 rounded-3xl flex items-center justify-center transition-all duration-500 shadow-2xl",
+          isDragActive 
+            ? "bg-brand-500 text-white glow-accent rotate-12" 
+            : "bg-brand-50 dark:bg-dark-section text-brand-600 dark:text-brand-400 group-hover:rotate-6 group-hover:scale-110"
+        )}>
+          <Upload size={44} strokeWidth={2} />
         </div>
         
-        <div className="text-center space-y-3">
-          <h2 className="text-2xl font-bold text-slate-900 dark:text-white">
-            {isDragActive ? 'Drop your files here' : 'Select or drop your files'}
+        <div className="text-center space-y-3 relative z-10">
+          <h2 className="text-5xl font-black text-slate-900 dark:text-white tracking-tight leading-none">
+            {isDragActive ? "Drop files here" : "Select your files"}
           </h2>
-          <p className="text-slate-500 dark:text-slate-400 font-medium">
-            Drag and drop your PDFs or images to start organizing
+          <p className="text-slate-500 dark:text-slate-400 font-medium text-lg">
+            Drag and drop your PDFs or Images
           </p>
         </div>
 
-        <div className="flex items-center gap-6 pt-4">
-          <div className="flex items-center gap-2 text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">
-            <FileText size={16} />
-            <span>PDF Support</span>
-          </div>
-          <div className="w-1 h-1 rounded-full bg-slate-300 dark:bg-slate-700" />
-          <div className="flex items-center gap-2 text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">
-            <ImageIcon size={16} />
-            <span>Image Support</span>
-          </div>
+        {/* Bottom Progress/Status Bar (Visual Only) */}
+        <div className="absolute bottom-0 left-0 w-full h-1.5 bg-slate-100 dark:bg-dark-border overflow-hidden">
+          <motion.div 
+            initial={{ x: "-100%" }}
+            animate={isDragActive ? { x: "0%" } : { x: "-100%" }}
+            transition={{ repeat: Infinity, duration: 1.5, ease: "linear" }}
+            className="w-full h-full bg-gradient-to-r from-brand-500 to-cyan-400"
+          />
         </div>
-
-        {/* Decorative elements */}
-        <div className="absolute top-8 left-8 w-12 h-12 border-t-2 border-l-2 border-slate-200 dark:border-slate-800 rounded-tl-2xl group-hover:border-saas-accent-light dark:group-hover:border-saas-accent-dark transition-colors" />
-        <div className="absolute top-8 right-8 w-12 h-12 border-t-2 border-r-2 border-slate-200 dark:border-slate-800 rounded-tr-2xl group-hover:border-saas-accent-light dark:group-hover:border-saas-accent-dark transition-colors" />
-        <div className="absolute bottom-8 left-8 w-12 h-12 border-b-2 border-l-2 border-slate-200 dark:border-slate-800 rounded-bl-2xl group-hover:border-saas-accent-light dark:group-hover:border-saas-accent-dark transition-colors" />
-        <div className="absolute bottom-8 right-8 w-12 h-12 border-b-2 border-r-2 border-slate-200 dark:border-slate-800 rounded-br-2xl group-hover:border-saas-accent-light dark:group-hover:border-saas-accent-dark transition-colors" />
       </motion.div>
-
-      <div className="mt-16 grid grid-cols-1 sm:grid-cols-3 gap-8">
-        {[
-          { title: '100% Quality', desc: 'We preserve original vector data for perfect results.', icon: Sparkles },
-          { title: 'Secure & Private', desc: 'Your files are processed locally in your browser.', icon: ShieldCheck },
-          { title: 'Smart Editing', desc: 'Crop, rotate, and annotate with professional tools.', icon: LayoutGrid }
-        ].map((feature, i) => (
-          <motion.div
-            key={i}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 + i * 0.1 }}
-            className="p-6 rounded-2xl border border-slate-100 dark:border-slate-800 bg-white/50 dark:bg-saas-card-dark/50 backdrop-blur-sm"
-          >
-            <div className="w-10 h-10 rounded-xl bg-saas-accent-light/10 dark:bg-saas-accent-dark/10 flex items-center justify-center text-saas-accent-light dark:text-saas-accent-dark mb-4">
-              <feature.icon size={20} />
-            </div>
-            <h3 className="text-sm font-bold text-slate-900 dark:text-white mb-2 uppercase tracking-tight">{feature.title}</h3>
-            <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">{feature.desc}</p>
-          </motion.div>
-        ))}
-      </div>
     </motion.div>
   );
 };
-
-import { ShieldCheck, LayoutGrid } from 'lucide-react';

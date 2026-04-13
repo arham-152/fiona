@@ -20,6 +20,7 @@ export interface PageItem {
   annotations?: Annotation[];
   color: string; // For grouping/marking
   sourcePdfBuffer?: Uint8Array; // Original PDF data for high-quality export
+  isEdited?: boolean; // Flag to indicate if destructive edits are baked into dataUrl
 }
 
 export interface Annotation {

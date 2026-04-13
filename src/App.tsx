@@ -3,7 +3,7 @@ import { useDropzone } from 'react-dropzone';
 import { PageItem } from './types';
 import { extractPagesFromPdf, processImageFile, generatePdfFromPages, FILE_COLORS } from './lib/pdf-utils';
 import { motion, AnimatePresence } from 'motion/react';
-import { Loader2, X, Sun, Moon, ShieldCheck } from 'lucide-react';
+import { Loader2, X } from 'lucide-react';
 
 import { Dropzone } from './components/Dropzone';
 
@@ -14,7 +14,6 @@ export default function App() {
   const [pages, setPages] = useState<PageItem[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [processProgress, setProcessProgress] = useState(0);
   const [activeEditorPage, setActiveEditorPage] = useState<PageItem | null>(null);
   const [isDarkMode, setIsDarkMode] = useState(() => {
     const saved = localStorage.getItem('theme');
@@ -40,34 +39,38 @@ export default function App() {
   }, [isDarkMode]);
 
   const handleFilesAdded = useCallback(async (files: File[]) => {
+    if (files.length === 0) return;
     setIsProcessing(true);
-    setProcessProgress(0);
+    setError(null);
     try {
       const newPages: PageItem[] = [];
-      const totalFiles = files.length;
       
-      for (let i = 0; i < files.length; i++) {
-        const file = files[i];
-        const color = FILE_COLORS[Math.floor(Math.random() * FILE_COLORS.length)];
-        
-        if (file.type === 'application/pdf') {
-          const extracted = await extractPagesFromPdf(file, color);
-          newPages.push(...extracted);
-        } else {
-          const processed = await processImageFile(file, color);
-          newPages.push(processed);
+      for (const file of files) {
+        try {
+          const color = FILE_COLORS[Math.floor(Math.random() * FILE_COLORS.length)];
+          if (file.type === 'application/pdf') {
+            const extracted = await extractPagesFromPdf(file, color);
+            newPages.push(...extracted);
+          } else if (file.type.startsWith('image/')) {
+            const processed = await processImageFile(file, color);
+            newPages.push(processed);
+          }
+        } catch (fileError) {
+          console.error(`Error processing file ${file.name}:`, fileError);
+          // Continue with other files but maybe show a warning later
         }
-        
-        setProcessProgress(Math.round(((i + 1) / totalFiles) * 100));
       }
       
-      setPages(prev => [...prev, ...newPages]);
+      if (newPages.length > 0) {
+        setPages(prev => [...prev, ...newPages]);
+      } else {
+        setError('No valid pages could be extracted from the selected files.');
+      }
     } catch (error) {
-      console.error('Error processing files:', error);
-      setError('Failed to process one or more files. Please ensure they are valid PDFs or images.');
+      console.error('Error in handleFilesAdded:', error);
+      setError('An unexpected error occurred while processing files.');
     } finally {
       setIsProcessing(false);
-      setProcessProgress(0);
     }
   }, []);
 
@@ -92,23 +95,30 @@ export default function App() {
   };
 
   const handleDownload = async () => {
-    if (pages.length === 0) return;
+    if (pages.length === 0 || isProcessing) return;
     setIsProcessing(true);
-    try {
-      const pdfBytes = await generatePdfFromPages(pages);
-      const blob = new Blob([pdfBytes], { type: 'application/pdf' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'organized-document.pdf';
-      a.click();
-      URL.revokeObjectURL(url);
-    } catch (error) {
-      console.error('Error generating PDF:', error);
-      setError('Failed to generate PDF. Please try again.');
-    } finally {
-      setIsProcessing(false);
-    }
+    setError(null);
+    
+    // Use a small timeout to allow UI to update before heavy processing
+    setTimeout(async () => {
+      try {
+        const pdfBytes = await generatePdfFromPages(pages);
+        const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `organized-document-${new Date().getTime()}.pdf`;
+        a.click();
+        
+        // Clean up
+        setTimeout(() => URL.revokeObjectURL(url), 100);
+      } catch (error) {
+        console.error('Error generating PDF:', error);
+        setError('Failed to generate PDF. The document might be too large or contain complex elements.');
+      } finally {
+        setIsProcessing(false);
+      }
+    }, 100);
   };
 
   const activeIndex = activeEditorPage ? pages.findIndex(p => p.id === activeEditorPage.id) : -1;
@@ -127,7 +137,7 @@ export default function App() {
   return (
     <div 
       {...getRootProps()}
-      className="min-h-screen bg-saas-bg-light dark:bg-saas-bg-dark text-slate-900 dark:text-slate-100 selection:bg-saas-accent-light/30 outline-none transition-colors duration-300"
+      className="min-h-screen bg-white dark:bg-brand-900 text-gray-900 dark:text-gray-100 selection:bg-brand-400/30 outline-none transition-colors duration-300"
     >
         <input {...getInputProps()} />
         <input 
@@ -142,45 +152,6 @@ export default function App() {
             e.target.value = ''; // Reset for same file re-upload
           }}
         />
-
-        {/* Premium Sticky Navbar */}
-        <nav className="sticky top-0 z-[150] w-full border-b border-saas-border-light dark:border-saas-border-dark bg-saas-bg-light/80 dark:bg-saas-bg-dark/80 backdrop-blur-xl">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex justify-between h-16 items-center">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 flex items-center justify-center bg-saas-accent-light dark:bg-saas-accent-dark rounded-lg shadow-lg glow-accent">
-                  <img src="/logo.png" alt="Logo" className="w-5 h-5 object-contain invert brightness-0" />
-                </div>
-                <span className="text-lg font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-slate-600 dark:from-white dark:to-slate-400">
-                  DocFlow
-                </span>
-                <div className="hidden sm:flex items-center gap-1.5 px-2 py-0.5 bg-emerald-500/10 text-emerald-500 rounded-full border border-emerald-500/20 text-[10px] font-bold uppercase tracking-wider">
-                  <ShieldCheck size={12} />
-                  <span>Secure</span>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-4">
-                <button
-                  onClick={() => setIsDarkMode(!isDarkMode)}
-                  className="p-2 rounded-xl border border-saas-border-light dark:border-saas-border-dark hover:bg-slate-100 dark:hover:bg-slate-800 transition-all active:scale-95"
-                >
-                  {isDarkMode ? <Sun size={18} className="text-amber-400" /> : <Moon size={18} className="text-slate-600" />}
-                </button>
-                {pages.length > 0 && (
-                  <button
-                    onClick={handleDownload}
-                    disabled={isProcessing}
-                    className="hidden sm:flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-saas-accent-light to-indigo-600 dark:from-saas-accent-dark dark:to-indigo-500 text-white rounded-xl font-semibold text-sm shadow-lg hover:shadow-indigo-500/25 transition-all active:scale-95 disabled:opacity-50"
-                  >
-                    {isProcessing ? <Loader2 size={16} className="animate-spin" /> : null}
-                    <span>Export PDF</span>
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
-        </nav>
         
         {/* Global Drag Overlay - Only show when grid is active */}
         <AnimatePresence>
@@ -190,23 +161,23 @@ export default function App() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.15 }}
-              className="fixed inset-0 z-[200] flex items-center justify-center bg-saas-accent-dark/10 backdrop-blur-sm border-4 border-dashed border-saas-accent-dark m-4 rounded-3xl pointer-events-none"
+              className="fixed inset-0 z-[200] flex items-center justify-center bg-emerald-600/20 backdrop-blur-sm border-4 border-dashed border-emerald-500 m-4 rounded-3xl pointer-events-none"
             >
-              <div className="bg-saas-card-dark p-8 rounded-2xl shadow-2xl flex flex-col items-center gap-4 border border-saas-border-dark">
-                <div className="w-16 h-16 rounded-full bg-saas-accent-dark/20 flex items-center justify-center text-saas-accent-dark glow-accent">
+              <div className="bg-gray-900 p-8 rounded-2xl shadow-2xl flex flex-col items-center gap-4">
+                <div className="w-16 h-16 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-500">
                   <Loader2 className="animate-bounce" size={32} />
                 </div>
-                <p className="text-xl font-bold text-white tracking-tight">Drop to add files</p>
+                <p className="text-xl font-black text-white uppercase tracking-widest">Drop to add files</p>
               </div>
             </motion.div>
           )}
         </AnimatePresence>
 
-        <div className="fixed top-0 left-1/2 -translate-x-1/2 w-full max-w-[1200px] h-[600px] bg-saas-accent-dark/5 blur-[120px] pointer-events-none -z-10" />
+        <div className="fixed top-0 left-1/2 -translate-x-1/2 w-full max-w-[1000px] h-[600px] bg-brand-600/5 blur-[120px] pointer-events-none -z-10" />
 
-        <main className="flex-1 flex flex-col max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8">
+        <main className="min-h-screen flex flex-col">
           {pages.length === 0 ? (
-            <div className="flex-1 flex items-center justify-center py-12">
+            <div className="max-w-[1800px] mx-auto w-full px-4 py-12">
               <Dropzone 
                 onFilesAdded={handleFilesAdded} 
                 isDarkMode={isDarkMode}
@@ -214,7 +185,7 @@ export default function App() {
               />
             </div>
           ) : (
-            <Suspense fallback={<div className="flex-1 flex items-center justify-center"><Loader2 className="animate-spin text-saas-accent-light dark:text-saas-accent-dark" size={48} /></div>}>
+            <Suspense fallback={<div className="flex-1 flex items-center justify-center"><Loader2 className="animate-spin text-brand-500" size={48} /></div>}>
               <OrganizerGrid
                 pages={pages}
                 onReorder={handleReorder}
@@ -275,37 +246,16 @@ export default function App() {
         </AnimatePresence>
 
         <AnimatePresence>
-          {isProcessing && (
+          {isProcessing && pages.length === 0 && (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.15 }}
-              className="fixed inset-0 z-[300] flex flex-col items-center justify-center bg-slate-900/60 backdrop-blur-md"
+              className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-white/80 dark:bg-brand-950/80 backdrop-blur-md"
             >
-              <div className="p-8 rounded-3xl bg-saas-card-dark border border-saas-border-dark shadow-2xl flex flex-col items-center gap-6 max-w-sm w-full mx-4">
-                <div className="relative">
-                  <div className="w-20 h-20 rounded-full border-4 border-saas-accent-dark/20 border-t-saas-accent-dark animate-spin" />
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="w-3 h-3 bg-saas-accent-dark rounded-full glow-accent" />
-                  </div>
-                </div>
-                <div className="text-center w-full">
-                  <p className="text-xl font-bold text-white tracking-tight">Processing Document</p>
-                  <div className="mt-6 h-2 w-full bg-slate-800 rounded-full overflow-hidden">
-                    <motion.div 
-                      className="h-full bg-gradient-to-r from-saas-accent-dark to-saas-glow-dark"
-                      initial={{ width: 0 }}
-                      animate={{ width: `${processProgress}%` }}
-                      transition={{ duration: 0.3 }}
-                    />
-                  </div>
-                  <div className="flex justify-between mt-2">
-                    <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">{processProgress}% Complete</p>
-                    <p className="text-[10px] text-saas-accent-dark font-bold uppercase tracking-widest">Optimizing</p>
-                  </div>
-                </div>
-              </div>
+              <Loader2 className="animate-spin text-brand-600" size={48} />
+              <p className="mt-4 text-xs font-black text-brand-600 uppercase tracking-[0.3em]">Initializing...</p>
             </motion.div>
           )}
         </AnimatePresence>

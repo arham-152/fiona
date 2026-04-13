@@ -2,8 +2,9 @@ import React from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { PageItem } from '../types';
-import { Maximize2, RotateCw, Trash2, GripVertical } from 'lucide-react';
+import { ArrowUpRight, RotateCw, X } from 'lucide-react';
 import { clsx } from 'clsx';
+import { motion } from 'motion/react';
 
 interface PageCardProps {
   page: PageItem;
@@ -31,36 +32,29 @@ export const PageCard: React.FC<PageCardProps> = React.memo(({ page, onEdit, onD
   return (
     <div
       ref={setNodeRef}
-      style={style}
+      style={{ ...style, borderColor: page.color }}
+      onDoubleClick={() => onEdit(page)}
       className={clsx(
-        "group relative aspect-[3/4] bg-white dark:bg-saas-card-dark rounded-2xl overflow-hidden border border-slate-200 dark:border-saas-border-dark transition-all duration-300 cursor-default",
-        isDragging ? "opacity-50 scale-105 shadow-2xl ring-2 ring-saas-accent-light dark:ring-saas-accent-dark" : "hover:-translate-y-2 hover:shadow-2xl hover:shadow-slate-200/50 dark:hover:shadow-saas-accent-dark/10"
+        "group relative aspect-[3/4] bg-white dark:bg-dark-card rounded-[40px] overflow-hidden border-[6px] transition-all duration-300 cursor-pointer shadow-sm",
+        isDragging 
+          ? "opacity-50 scale-105 border-brand-500 glow-accent" 
+          : "hover:scale-[1.03] hover:-translate-y-1 hover:border-brand-500 hover:shadow-[0_0_20px_rgba(99,102,241,0.3)]"
       )}
     >
-      {/* Drag Handle */}
+      {/* Image Container */}
       <div 
         {...attributes} 
         {...listeners}
-        className="absolute top-3 left-3 z-20 p-1.5 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md rounded-lg opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing text-slate-400 hover:text-saas-accent-light dark:hover:text-saas-accent-dark"
+        className="w-full h-full cursor-grab active:cursor-grabbing overflow-hidden relative bg-slate-50 dark:bg-dark-section"
       >
-        <GripVertical size={14} />
-      </div>
-
-      {/* Page Number Badge */}
-      <div className="absolute top-3 right-3 z-20 px-2 py-1 bg-slate-900/80 backdrop-blur-md text-white text-[10px] font-bold rounded-lg border border-white/10 uppercase tracking-wider shadow-lg">
-        Page {page.pageNumber}
-      </div>
-
-      {/* Image Container */}
-      <div className="w-full h-full p-2 bg-slate-50 dark:bg-slate-900/50">
         <div 
-          className="w-full h-full rounded-xl overflow-hidden shadow-inner bg-white dark:bg-slate-900 transition-transform duration-500"
+          className="w-full h-full transition-transform duration-500 ease-out"
           style={{ transform: `rotate(${page.rotation}deg)` }}
         >
           <img
             src={page.dataUrl}
             alt={`Page ${page.pageNumber}`}
-            className="w-full h-full object-contain"
+            className="w-full h-full object-cover"
             loading="lazy"
             style={{ 
               filter: `brightness(${page.adjustments.brightness}%) contrast(${page.adjustments.contrast}%) saturate(${page.adjustments.saturation}%) ${
@@ -106,39 +100,57 @@ export const PageCard: React.FC<PageCardProps> = React.memo(({ page, onEdit, onD
         </div>
       </div>
 
-      {/* Action Bar - Appears on Hover */}
-      <div className="absolute inset-x-0 bottom-0 p-3 translate-y-full group-hover:translate-y-0 transition-transform duration-300 z-30">
-        <div className="flex items-center justify-center gap-1.5 p-1.5 bg-slate-900/90 backdrop-blur-xl rounded-xl border border-white/10 shadow-2xl">
-          <button 
-            onClick={() => onEdit(page)}
-            className="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 bg-saas-accent-light dark:bg-saas-accent-dark text-white rounded-lg text-[10px] font-bold uppercase tracking-wider hover:brightness-110 transition-all"
-            title="Open Editor"
-          >
-            <Maximize2 size={12} />
-            <span>Edit</span>
-          </button>
-          <button 
+      {/* Overlay Controls */}
+      <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-all duration-300 flex flex-col justify-between p-4 pointer-events-none backdrop-blur-[4px]">
+        <div className="flex justify-end items-start gap-2 pointer-events-auto">
+          <motion.button 
+            initial={{ opacity: 0, scale: 0.95 }}
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
             onClick={() => onRotate(page.id)}
-            className="p-2 text-slate-300 hover:text-white hover:bg-white/10 rounded-lg transition-all"
+            className="w-10 h-10 flex items-center justify-center bg-white/90 dark:bg-black/70 text-slate-900 dark:text-white rounded-full transition-colors shadow-[0_4px_10px_rgba(0,0,0,0.3)] border border-white/20 dark:border-white/10"
             title="Quick Rotate"
           >
-            <RotateCw size={14} />
-          </button>
-          <button 
+            <RotateCw size={18} strokeWidth={2.5} />
+          </motion.button>
+          <motion.button 
+            initial={{ opacity: 0, scale: 0.95 }}
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            onClick={() => onEdit(page)}
+            className="w-10 h-10 flex items-center justify-center bg-white/90 dark:bg-black/70 text-slate-900 dark:text-white rounded-full transition-colors shadow-[0_4px_10px_rgba(0,0,0,0.3)] border border-white/20 dark:border-white/10"
+            title="Open Editor"
+          >
+            <ArrowUpRight size={20} strokeWidth={3} />
+          </motion.button>
+          <motion.button 
+            initial={{ opacity: 0, scale: 0.95 }}
+            whileHover={{ scale: 1.1, rotate: 90 }}
+            whileTap={{ scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
             onClick={() => onDelete(page.id)}
-            className="p-2 text-slate-300 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all"
+            className="w-10 h-10 flex items-center justify-center bg-red-500 hover:bg-red-600 text-white rounded-full transition-colors shadow-[0_4px_10px_rgba(0,0,0,0.3)]"
             title="Delete Page"
           >
-            <Trash2 size={14} />
-          </button>
+            <X size={20} strokeWidth={3} />
+          </motion.button>
+        </div>
+        
+        <div className="flex justify-start items-end pointer-events-auto">
+          <div className="flex items-center gap-2.5 bg-black/40 backdrop-blur-md px-4 py-2 rounded-2xl border border-white/10">
+            <span className="text-[10px] font-black text-white truncate max-w-[140px] tracking-tight uppercase">
+              {page.originalFileName}
+            </span>
+          </div>
         </div>
       </div>
 
-      {/* File Color Indicator */}
-      <div 
-        className="absolute bottom-0 left-0 right-0 h-1"
-        style={{ backgroundColor: page.color }}
-      />
+      {/* Page Number Badge */}
+      <div className="absolute bottom-5 right-5 px-3 py-1.5 glass text-slate-900 dark:text-white text-[11px] font-black rounded-2xl border border-white/20 dark:border-white/10 uppercase tracking-tighter shadow-2xl">
+        P{page.pageNumber}
+      </div>
     </div>
   );
 });

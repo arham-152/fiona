@@ -37,7 +37,7 @@ export async function extractPagesFromPdf(file: File, color: string): Promise<Pa
     const batch = Array.from({ length: Math.min(BATCH_SIZE, pdf.numPages - i) }, async (_, j) => {
       const pageNum = i + j + 1;
       const page = await pdf.getPage(pageNum);
-      const viewport = page.getViewport({ scale: 4.0 }); // Ultra-high scale for crisp previews
+      const viewport = page.getViewport({ scale: 4.0 }); // High scale (approx 288 DPI) for crisp previews and fallbacks
       
       // Use OffscreenCanvas if available for better performance
       let canvas: HTMLCanvasElement | OffscreenCanvas;
@@ -54,7 +54,7 @@ export async function extractPagesFromPdf(file: File, color: string): Promise<Pa
       if (context) {
         await (page as any).render({ canvasContext: context, viewport }).promise;
         
-        // Use JPEG for better compatibility with pdf-lib, but at maximum quality
+        // Use high-quality JPEG for speed and compatibility
         let dataUrl: string;
         if (canvas instanceof OffscreenCanvas) {
           const blob = await canvas.convertToBlob({ type: 'image/jpeg', quality: 1.0 });
@@ -184,8 +184,8 @@ async function applyAdjustmentsToImage(pageItem: PageItem): Promise<string> {
         return;
       }
 
-      canvas.width = img.width;
-      canvas.height = img.height;
+      canvas.width = img.naturalWidth || img.width;
+      canvas.height = img.naturalHeight || img.height;
 
       // Apply filters
       let filterStr = '';
@@ -244,7 +244,7 @@ async function applyAdjustmentsToImage(pageItem: PageItem): Promise<string> {
       });
       
       try {
-        resolve(canvas.toDataURL('image/jpeg', 1.0)); // Maximum quality
+        resolve(canvas.toDataURL('image/jpeg', 1.0)); // High quality JPEG for speed
       } catch (e) {
         console.error('Canvas toDataURL failed:', e);
         resolve(pageItem.dataUrl);
@@ -274,8 +274,9 @@ export async function generatePdfFromPages(pages: PageItem[]): Promise<Uint8Arra
     const hasFilter = pageItem.filter && pageItem.filter !== 'none';
     const hasAnnotations = pageItem.annotations && pageItem.annotations.length > 0;
     const hasCrop = !!pageItem.crop;
+    const isEdited = !!pageItem.isEdited;
 
-    if (pageItem.sourcePdfBuffer && !hasAdjustments && !hasFilter && !hasAnnotations && !hasCrop) {
+    if (pageItem.sourcePdfBuffer && !hasAdjustments && !hasFilter && !hasAnnotations && !hasCrop && !isEdited) {
       // 100% Quality: Copy original PDF page
       let sourceDoc = loadedPdfs.get(pageItem.sourcePdfBuffer);
       if (!sourceDoc) {
@@ -320,29 +321,47 @@ export async function generatePdfFromPages(pages: PageItem[]): Promise<Uint8Arra
     
     const isVertical = rotationCW === 90 || rotationCW === 270;
     
-    const pageWidth = isVertical ? image.height : image.width;
-    const pageHeight = isVertical ? image.width : image.height;
+    // Standard A4 dimensions in points
+    const A4_WIDTH = 595.28;
+    const A4_HEIGHT = 841.89;
+    
+    const imgWidth = image.width;
+    const imgHeight = image.height;
+    
+    // Determine if the page should be landscape or portrait based on image aspect ratio
+    const isLandscape = (isVertical ? imgHeight : imgWidth) > (isVertical ? imgWidth : imgHeight);
+    
+    const pageWidth = isLandscape ? A4_HEIGHT : A4_WIDTH;
+    const pageHeight = isLandscape ? A4_WIDTH : A4_HEIGHT;
+    
+    const scaleX = pageWidth / (isVertical ? imgHeight : imgWidth);
+    const scaleY = pageHeight / (isVertical ? imgWidth : imgHeight);
+    const scaleFactor = Math.min(scaleX, scaleY);
     
     const page = pdfDoc.addPage([pageWidth, pageHeight]);
     
-    let x = 0;
-    let y = 0;
+    const drawWidth = imgWidth * scaleFactor;
+    const drawHeight = imgHeight * scaleFactor;
     
-    // Calculate position based on CCW rotation around bottom-left corner of the image
+    // Center the image on the A4 page
+    let x = (pageWidth - (isVertical ? drawHeight : drawWidth)) / 2;
+    let y = (pageHeight - (isVertical ? drawWidth : drawHeight)) / 2;
+
+    // Adjust x,y for rotation (pdf-lib rotates around bottom-left of the drawn area)
     if (rotationCCW === 90) {
-      x = image.height;
+      x += drawHeight;
     } else if (rotationCCW === 180) {
-      x = image.width;
-      y = image.height;
+      x += drawWidth;
+      y += drawHeight;
     } else if (rotationCCW === 270) {
-      y = image.width;
+      y += drawWidth;
     }
     
     page.drawImage(image, {
       x,
       y,
-      width: image.width,
-      height: image.height,
+      width: drawWidth,
+      height: drawHeight,
       rotate: degrees(rotationCCW),
     });
   }

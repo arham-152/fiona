@@ -1,7 +1,9 @@
 import React from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { GripVertical, Trash2, FileText } from 'lucide-react';
+import { GripVertical, Trash2 } from 'lucide-react';
+import { clsx } from 'clsx';
+import { motion } from 'motion/react';
 
 interface FileItemProps {
   fileId: string;
@@ -31,50 +33,47 @@ export const FileItem: React.FC<FileItemProps> = React.memo(({ fileId, color, na
     <div 
       ref={setNodeRef}
       style={style}
-      className={`
-        flex items-center gap-3 px-3 py-3 bg-white dark:bg-saas-card-dark rounded-xl border transition-all cursor-default group
-        ${isDragging 
-          ? 'border-saas-accent-light dark:border-saas-accent-dark opacity-50 scale-[1.02] shadow-2xl z-50' 
-          : 'border-slate-100 dark:border-slate-800 hover:border-saas-accent-light/30 dark:hover:border-saas-accent-dark/30 hover:bg-slate-50 dark:hover:bg-slate-800/50 shadow-sm'}
-      `}
+      className={clsx(
+        "flex items-center gap-4 px-4 py-3.5 rounded-2xl border transition-all duration-300 cursor-default group relative overflow-hidden",
+        isDragging 
+          ? "border-brand-500 bg-brand-500/10 scale-[1.05] shadow-2xl z-50 glow-accent" 
+          : "border-slate-100 dark:border-dark-border bg-white dark:bg-dark-card/50 hover:border-brand-500/30 hover:bg-slate-50 dark:hover:bg-dark-section/50 hover:shadow-lg"
+      )}
     >
       <div 
         {...attributes} 
         {...listeners}
-        className="cursor-grab active:cursor-grabbing text-slate-300 dark:text-slate-600 group-hover:text-saas-accent-light dark:group-hover:text-saas-accent-dark transition-colors"
+        className="cursor-grab active:cursor-grabbing text-slate-300 dark:text-slate-700 group-hover:text-brand-500 dark:group-hover:text-brand-400 transition-colors"
       >
-        <GripVertical size={14} />
+        <GripVertical size={14} strokeWidth={2.5} />
       </div>
       
-      <div className="relative">
-        <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-400 dark:text-slate-500">
-          <FileText size={16} />
-        </div>
-        <div 
-          className="absolute -bottom-1 -right-1 w-3 h-3 rounded-full border-2 border-white dark:border-saas-card-dark shadow-sm" 
-          style={{ backgroundColor: color }} 
-        />
+      <div className="w-2.5 h-2.5 rounded-full shadow-lg shrink-0 relative" style={{ backgroundColor: color }}>
+        <div className="absolute inset-0 rounded-full animate-pulse opacity-50" style={{ backgroundColor: color }} />
       </div>
       
-      <div className="flex flex-col flex-1 min-w-0">
-        <span className="text-[11px] font-bold text-slate-700 dark:text-slate-200 truncate tracking-tight">
-          {name}
+      <span className="text-[11px] font-bold text-slate-600 dark:text-slate-300 truncate flex-1 tracking-tight uppercase">
+        {name}
+      </span>
+      
+      <div className="flex items-center gap-3">
+        <span className="text-[10px] font-black text-brand-600 dark:text-brand-400 bg-brand-500/10 dark:bg-brand-500/20 px-2.5 py-1 rounded-xl border border-brand-500/20 min-w-[24px] text-center shadow-inner">
+          {count}
         </span>
-        <span className="text-[9px] font-medium text-slate-400 dark:text-slate-500 uppercase tracking-wider">
-          {count} {count === 1 ? 'Page' : 'Pages'}
-        </span>
+        
+        <motion.button
+          whileHover={{ scale: 1.1, rotate: 15 }}
+          whileTap={{ scale: 0.9 }}
+          onClick={(e) => {
+            e.stopPropagation();
+            onDelete?.(fileId);
+          }}
+          className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-xl transition-all opacity-0 group-hover:opacity-100"
+          title="Delete all pages from this file"
+        >
+          <Trash2 size={14} strokeWidth={2.5} />
+        </motion.button>
       </div>
-      
-      <button
-        onClick={(e) => {
-          e.stopPropagation();
-          onDelete?.(fileId);
-        }}
-        className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-all opacity-0 group-hover:opacity-100"
-        title="Delete all pages from this file"
-      >
-        <Trash2 size={14} />
-      </button>
     </div>
   );
 });

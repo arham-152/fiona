@@ -1,31 +1,42 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
 @import "tailwindcss";
 @import "react-image-crop/dist/ReactCrop.css";
 
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
+  /* Font */
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
 
-  /* SaaS Theme Colors - Dark Mode */
-  --color-saas-bg-dark: #0B1220;
-  --color-saas-card-dark: #111827;
-  --color-saas-border-dark: #1F2937;
-  --color-saas-accent-dark: #6366F1;
-  --color-saas-glow-dark: #22D3EE;
+  /* Dark Mode Colors */
+  --color-dark-bg: #0B1220;
+  --color-dark-section: #0F172A;
+  --color-dark-card: #111827;
+  --color-dark-border: #1F2937;
+  --color-dark-accent: #6366F1;
+  --color-dark-glow: #22D3EE;
 
-  /* SaaS Theme Colors - Light Mode */
-  --color-saas-bg-light: #F8FAFC;
-  --color-saas-card-light: #FFFFFF;
-  --color-saas-border-light: #E5E7EB;
-  --color-saas-accent-light: #4F46E5;
+  /* Light Mode Colors */
+  --color-light-bg: #F8FAFC;
+  --color-light-card: #FFFFFF;
+  --color-light-border: #E2E8F0;
+  --color-light-accent: #4F46E5;
 
-  /* Legacy brand colors for compatibility during transition */
+  /* Brand Colors (Mapping for existing code) */
   --color-brand-950: #0B1220;
-  --color-brand-900: #111827;
-  --color-brand-800: #1F2937;
-  --color-brand-600: #6366F1;
-  --color-brand-500: #4F46E5;
+  --color-brand-900: #0F172A;
+  --color-brand-800: #111827;
+  --color-brand-700: #1F2937;
+  --color-brand-600: #4F46E5;
+  --color-brand-500: #6366F1;
+  --color-brand-400: #818CF8;
+  --color-brand-300: #A5B4FC;
+  --color-brand-200: #E2E8F0;
+  --color-brand-100: #F1F5F9;
+  --color-brand-50: #F8FAFC;
+
+  /* Transitions */
+  --transition-all: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 :root {
@@ -37,47 +48,58 @@
 }
 
 body {
-  @apply font-sans antialiased bg-saas-bg-light dark:bg-saas-bg-dark text-slate-900 dark:text-slate-100 transition-colors duration-300;
+  @apply bg-light-bg dark:bg-dark-bg text-slate-900 dark:text-slate-100 font-sans antialiased transition-colors duration-300;
   overflow-x: hidden;
 }
 
+/* Glassmorphism & Effects */
+.glass {
+  @apply bg-white/70 dark:bg-dark-card/70 backdrop-blur-md border border-white/20 dark:border-white/10;
+}
+
+.glow-accent {
+  box-shadow: 0 0 20px -5px rgba(99, 102, 241, 0.5);
+}
+
+.dark .glow-accent {
+  box-shadow: 0 0 25px -5px rgba(34, 211, 238, 0.3);
+}
+
+/* Custom Scrollbar */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  @apply bg-transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  @apply bg-slate-200 dark:bg-slate-800 rounded-full transition-colors;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  @apply bg-slate-300 dark:bg-slate-700;
+}
+
+/* React Crop Overrides */
 .ReactCrop__crop-selection {
-  border: 2px solid var(--color-saas-accent-dark) !important;
-  box-shadow: 0 0 0 9999em rgba(0, 0, 0, 0.5);
+  border: 2px solid #6366F1 !important;
+  box-shadow: 0 0 0 9999em rgba(0, 0, 0, 0.7);
 }
 
 .ReactCrop__drag-handle {
-  width: 12px !important;
-  height: 12px !important;
-  background-color: var(--color-saas-accent-dark) !important;
+  width: 10px !important;
+  height: 10px !important;
+  background-color: #6366F1 !important;
   border: 2px solid white !important;
   border-radius: 50% !important;
 }
 
-@layer utilities {
-  .glass-dark {
-    @apply bg-saas-card-dark/80 backdrop-blur-xl border border-saas-border-dark;
-  }
-  .glass-light {
-    @apply bg-saas-card-light/80 backdrop-blur-xl border border-saas-border-light;
-  }
-  .glow-accent {
-    box-shadow: 0 0 20px -5px var(--color-saas-accent-dark), 0 0 15px -5px var(--color-saas-glow-dark);
-  }
-  .glow-accent-light {
-    box-shadow: 0 10px 15px -3px rgba(79, 70, 229, 0.3);
-  }
-  .custom-scrollbar::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
-  }
-  .custom-scrollbar::-webkit-scrollbar-track {
-    @apply bg-transparent;
-  }
-  .custom-scrollbar::-webkit-scrollbar-thumb {
-    @apply bg-slate-300 dark:bg-slate-700 rounded-full;
-  }
-  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-    @apply bg-slate-400 dark:bg-slate-600;
-  }
+/* Animations */
+@keyframes border-glow {
+  0%, 100% { border-color: var(--color-brand-500); }
+  50% { border-color: var(--color-dark-glow); }
+}
+
+.animate-border-glow {
+  animation: border-glow 3s infinite;
 }
