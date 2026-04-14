@@ -72,9 +72,10 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = ({
         <div className="relative w-full h-full flex flex-col bg-zinc-900 overflow-hidden rounded-3xl border border-zinc-800 shadow-2xl">
           <div className="flex-1 w-full overflow-auto custom-scrollbar p-4 sm:p-12 flex items-center justify-center">
             <div 
+              className="flex items-center justify-center"
               style={{ 
                 width: `${100 * zoom}%`,
-                maxWidth: 'none',
+                maxWidth: '100%',
                 transition: 'width 0.2s ease-out'
               }}
             >
@@ -91,7 +92,7 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = ({
                   src={editedPage.dataUrl}
                   alt="Crop Preview"
                   onLoad={onImageLoad}
-                  className="w-full h-auto block"
+                  className="max-w-full max-h-[70vh] lg:max-h-[80vh] w-auto h-auto block object-contain"
                   style={filterStyle}
                 />
               </ReactCrop>

@@ -111,10 +111,11 @@ export const PageCard: React.FC<PageCardProps> = React.memo(({ page, onEdit, onD
               e.stopPropagation();
               onEdit(page);
             }}
-            className="absolute top-4 right-4 p-2.5 bg-brand-500 hover:bg-brand-600 text-white rounded-xl shadow-xl transform scale-90 group-hover:scale-100 transition-all duration-300 flex items-center justify-center pointer-events-auto border border-white/20"
+            className="absolute top-4 right-4 p-2.5 lg:px-4 lg:py-2 bg-brand-500 hover:bg-brand-600 text-white rounded-xl shadow-xl transform scale-90 group-hover:scale-100 transition-all duration-300 flex items-center justify-center gap-2 pointer-events-auto border border-white/20"
             title="Edit Page"
           >
             <ArrowUpRight size={18} strokeWidth={3} />
+            <span className="hidden lg:inline text-[10px] font-black uppercase tracking-widest">Edit Page</span>
           </button>
         </div>
 
