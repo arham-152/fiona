@@ -219,15 +219,18 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = ({
                   style={{
                     left: `${anno.x}%`,
                     top: `${anno.y}%`,
-                    width: (anno.type === 'rect' || anno.type === 'image') ? `${anno.width}%` : 'auto',
-                    height: (anno.type === 'rect' || anno.type === 'image') ? `${anno.height}%` : 'auto',
+                    width: (anno.type === 'rect' || anno.type === 'image' || anno.type === 'text') ? `${anno.width}%` : 'auto',
+                    height: (anno.type === 'rect' || anno.type === 'image' || anno.type === 'text') ? `${anno.height}%` : 'auto',
                     backgroundColor: anno.type === 'rect' ? anno.color : 'transparent',
                     color: anno.type === 'text' ? anno.color : 'inherit',
                     fontSize: anno.type === 'text' ? `${anno.fontSize}px` : 'inherit',
                     fontWeight: anno.type === 'text' ? (anno.fontWeight || 'bold') : 'normal',
                     fontFamily: anno.type === 'text' ? (anno.fontFamily || 'sans-serif') : 'inherit',
                     zIndex: selectedAnnotationId === anno.id ? 30 : 20,
-                    borderRadius: anno.type === 'rect' ? '4px' : '0'
+                    borderRadius: anno.type === 'rect' ? '4px' : '0',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
                   }}
                   onClick={(e) => {
                     e.stopPropagation();
@@ -280,22 +283,18 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = ({
                           newY = initialY + (initialHeight - newHeight);
                         }
 
-                        // Maintain aspect ratio for images if dragging a corner
-                        if (anno.type === 'image' && isHandle.includes('-')) {
-                          const aspectRatio = initialWidth / initialHeight;
-                          if (Math.abs(dx) > Math.abs(dy)) {
-                            newHeight = newWidth / aspectRatio;
-                            if (isHandle.includes('top')) newY = initialY + (initialHeight - newHeight);
-                          } else {
-                            newWidth = newHeight * aspectRatio;
-                            if (isHandle.includes('left')) newX = initialX + (initialWidth - newWidth);
-                          }
-                        }
-
                         updates.width = Math.max(2, newWidth);
                         updates.height = Math.max(2, newHeight);
                         updates.x = Math.max(0, Math.min(100, newX));
                         updates.y = Math.max(0, Math.min(100, newY));
+                        
+                        // Scale font size for text if height changes significantly
+                        if (anno.type === 'text' && anno.fontSize) {
+                          const scale = newHeight / initialHeight;
+                          if (Math.abs(1 - scale) > 0.01) {
+                            updates.fontSize = Math.max(8, Math.round(anno.fontSize * scale));
+                          }
+                        }
                         
                         updateAnnotation(anno.id, updates);
                       } else {
@@ -321,7 +320,7 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = ({
                 >
                   {anno.type === 'text' && (
                     <div 
-                      className="whitespace-nowrap px-2 py-1 select-none leading-tight"
+                      className="w-full h-full flex items-center justify-center px-2 py-1 select-none leading-tight text-center"
                     >
                       {anno.text}
                     </div>
@@ -333,13 +332,15 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = ({
                   {selectedAnnotationId === anno.id && (
                     <>
                       {/* Resize Handles */}
-                      {(anno.type === 'rect' || anno.type === 'image') && (
+                      {(anno.type === 'rect' || anno.type === 'image' || anno.type === 'text') && (
                         <>
                           <div data-handle="top-left" className="absolute -top-1.5 -left-1.5 w-3 h-3 bg-white border-2 border-brand-500 rounded-full cursor-nwse-resize z-50" />
                           <div data-handle="top-right" className="absolute -top-1.5 -right-1.5 w-3 h-3 bg-white border-2 border-brand-500 rounded-full cursor-nesw-resize z-50" />
                           <div data-handle="bottom-left" className="absolute -bottom-1.5 -left-1.5 w-3 h-3 bg-white border-2 border-brand-500 rounded-full cursor-nesw-resize z-50" />
                           <div data-handle="bottom-right" className="absolute -bottom-1.5 -right-1.5 w-3 h-3 bg-white border-2 border-brand-500 rounded-full cursor-nwse-resize z-50" />
                           
+                          <div data-handle="top" className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-6 h-1.5 bg-brand-500 rounded-full cursor-ns-resize z-50" />
+                          <div data-handle="left" className="absolute top-1/2 -left-1.5 -translate-y-1/2 w-1.5 h-6 bg-brand-500 rounded-full cursor-ew-resize z-50" />
                           <div data-handle="right" className="absolute top-1/2 -right-1.5 -translate-y-1/2 w-1.5 h-6 bg-brand-500 rounded-full cursor-ew-resize z-50" />
                           <div data-handle="bottom" className="absolute left-1/2 -bottom-1.5 -translate-x-1/2 w-6 h-1.5 bg-brand-500 rounded-full cursor-ns-resize z-50" />
                         </>

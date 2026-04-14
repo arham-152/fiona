@@ -104,6 +104,7 @@ export const OrganizerGrid: React.FC<OrganizerGridProps> = ({
           onDeleteFile={handleDeleteFile}
           onDownload={onDownload}
           onFileReorder={handleFileDragEnd}
+          className="hidden lg:flex w-96 border-l border-slate-200 dark:border-dark-border bg-white dark:bg-dark-card"
         />
       </div>
 
@@ -162,17 +163,16 @@ export const OrganizerGrid: React.FC<OrganizerGridProps> = ({
                 </button>
               </div>
               
-              <div className="flex-1 overflow-y-auto p-6 custom-scrollbar">
-                <div className="space-y-6">
-                  <OrganizerSidebar 
-                    pages={pages}
-                    fileIds={fileIds}
-                    isProcessing={isProcessing}
-                    onDeleteFile={handleDeleteFile}
-                    onDownload={onDownload}
-                    onFileReorder={handleFileDragEnd}
-                  />
-                </div>
+              <div className="flex-1 overflow-y-auto custom-scrollbar">
+                <OrganizerSidebar 
+                  pages={pages}
+                  fileIds={fileIds}
+                  isProcessing={isProcessing}
+                  onDeleteFile={handleDeleteFile}
+                  onDownload={onDownload}
+                  onFileReorder={handleFileDragEnd}
+                  className="w-full bg-white dark:bg-brand-950"
+                />
               </div>
 
               <div className="p-6 border-t border-gray-100 dark:border-brand-800">

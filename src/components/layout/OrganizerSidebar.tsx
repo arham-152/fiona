@@ -14,6 +14,7 @@ interface OrganizerSidebarProps {
   onDeleteFile: (fileId: string) => void;
   onDownload: () => void;
   onFileReorder: (event: DragEndEvent) => void;
+  className?: string;
 }
 
 export const OrganizerSidebar: React.FC<OrganizerSidebarProps> = ({
@@ -23,6 +24,7 @@ export const OrganizerSidebar: React.FC<OrganizerSidebarProps> = ({
   onDeleteFile,
   onDownload,
   onFileReorder,
+  className,
 }) => {
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -36,7 +38,7 @@ export const OrganizerSidebar: React.FC<OrganizerSidebarProps> = ({
   );
 
   return (
-    <aside className="hidden lg:flex w-96 border-l border-slate-200 dark:border-dark-border bg-white dark:bg-dark-card flex-col shadow-saas-2xl z-40 relative">
+    <aside className={clsx("flex flex-col shadow-saas-2xl z-40 relative", className)}>
       <div className="absolute inset-y-0 left-0 w-px bg-gradient-to-b from-transparent via-brand-500/20 to-transparent pointer-events-none" />
       
       {/* Scrollable File List */}

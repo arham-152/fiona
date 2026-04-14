@@ -32,7 +32,6 @@ export const PageCard: React.FC<PageCardProps> = React.memo(({ page, onEdit, onD
     <div
       ref={setNodeRef}
       style={{ ...style, borderColor: page.color }}
-      onDoubleClick={() => onEdit(page)}
       {...attributes}
       {...listeners}
       className={clsx(
@@ -103,15 +102,15 @@ export const PageCard: React.FC<PageCardProps> = React.memo(({ page, onEdit, onD
         </div>
 
         {/* Hover Overlay with Prominent Edit Button */}
-        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center z-10 pointer-events-none">
+        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity z-10 pointer-events-none">
           <button 
             onClick={(e) => {
               e.stopPropagation();
               onEdit(page);
             }}
-            className="px-6 py-2.5 bg-brand-500 hover:bg-brand-600 text-white rounded-full font-black text-xs uppercase tracking-widest shadow-xl transform scale-90 group-hover:scale-100 transition-all duration-300 flex items-center gap-2 pointer-events-auto"
+            className="absolute top-4 right-4 px-4 py-2 bg-brand-500 hover:bg-brand-600 text-white rounded-xl font-black text-[10px] uppercase tracking-widest shadow-xl transform scale-90 group-hover:scale-100 transition-all duration-300 flex items-center gap-2 pointer-events-auto border border-white/20"
           >
-            <ArrowUpRight size={16} strokeWidth={3} />
+            <ArrowUpRight size={14} strokeWidth={3} />
             Edit Page
           </button>
         </div>

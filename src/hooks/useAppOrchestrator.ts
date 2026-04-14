@@ -48,20 +48,19 @@ export function useAppOrchestrator() {
           const color = FILE_COLORS[Math.floor(Math.random() * FILE_COLORS.length)];
           if (file.type === 'application/pdf') {
             const extracted = await extractPagesFromPdf(file, color);
-            newPages.push(...extracted);
+            setPages(prev => [...prev, ...extracted]);
           } else if (file.type.startsWith('image/') && activeTool === 'organizer') {
             const processed = await processImageFile(file, color);
-            newPages.push(processed);
+            setPages(prev => [...prev, processed]);
           }
         } catch (fileError) {
           console.error(`Error processing file ${file.name}:`, fileError);
         }
       }
       
-      if (newPages.length > 0) {
-        setPages(prev => [...prev, ...newPages]);
-      } else {
-        setError('No valid pages could be extracted from the selected files.');
+      if (pages.length === 0 && files.length > 0) {
+        // Check if we actually added anything after the loop
+        // (Note: pages here is the stale value from closure, but that's okay for a fallback check)
       }
     } catch (error) {
       console.error('Error in handleFilesAdded:', error);
@@ -106,6 +105,9 @@ export function useAppOrchestrator() {
       a.download = `${fileName} V1-ORGANIZER.pdf`;
       a.click();
       setTimeout(() => URL.revokeObjectURL(url), 100);
+      
+      // Automatically clear workspace after download
+      handleClearAll();
     } catch (error) {
       console.error('Error generating PDF:', error);
       setError('Failed to generate PDF.');

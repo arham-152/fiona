@@ -83,7 +83,7 @@ export default function App() {
       <div className="fixed top-0 left-1/2 -translate-x-1/2 w-full max-w-[1200px] h-[800px] bg-brand-500/5 blur-[160px] pointer-events-none -z-10" />
 
       <main className="min-h-screen flex flex-col">
-        {pages.length === 0 ? (
+        {pages.length === 0 && !isProcessing ? (
           <div className="max-w-[1800px] mx-auto w-full px-4 py-12">
             <Dropzone 
               onFilesAdded={handleFilesAdded} 
@@ -162,7 +162,7 @@ export default function App() {
       </AnimatePresence>
 
       <AnimatePresence>
-        {isProcessing && pages.length === 0 && (
+        {isProcessing && pages.length === 0 && false && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
