@@ -320,13 +320,13 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = ({
                 >
                   {anno.type === 'text' && (
                     <div 
-                      className="w-full h-full flex items-center justify-center px-2 py-1 select-none leading-tight text-center"
+                      className="w-full h-full flex items-center justify-center select-none leading-none text-center overflow-hidden"
                     >
                       {anno.text}
                     </div>
                   )}
                   {anno.type === 'image' && (
-                    <img src={anno.image} alt="Annotation" className="w-full h-full object-contain pointer-events-none" />
+                    <img src={anno.image} alt="Annotation" className="w-full h-full block pointer-events-none" />
                   )}
                   
                   {selectedAnnotationId === anno.id && (

@@ -172,6 +172,8 @@ export const OrganizerGrid: React.FC<OrganizerGridProps> = ({
                   onDownload={onDownload}
                   onFileReorder={handleFileDragEnd}
                   className="w-full bg-white dark:bg-brand-950"
+                  hideFooter
+                  hideProTip
                 />
               </div>
 

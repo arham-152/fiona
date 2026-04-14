@@ -79,22 +79,25 @@ export const PageCard: React.FC<PageCardProps> = React.memo(({ page, onEdit, onD
                 style={{
                   left: `${anno.x}%`,
                   top: `${anno.y}%`,
-                  width: (anno.type === 'rect' || anno.type === 'image') ? `${anno.width}%` : 'auto',
-                  height: (anno.type === 'rect' || anno.type === 'image') ? `${anno.height}%` : 'auto',
+                  width: (anno.type === 'rect' || anno.type === 'image' || anno.type === 'text') ? `${anno.width}%` : 'auto',
+                  height: (anno.type === 'rect' || anno.type === 'image' || anno.type === 'text') ? `${anno.height}%` : 'auto',
                   backgroundColor: anno.type === 'rect' ? anno.color : 'transparent',
                   color: anno.type === 'text' ? anno.color : 'inherit',
-                  fontSize: anno.type === 'text' ? `${Math.max(4, anno.fontSize! / 4)}px` : 'inherit',
+                  fontSize: anno.type === 'text' ? `${Math.max(2, anno.fontSize! / 4)}px` : 'inherit',
                   fontWeight: anno.type === 'text' ? (anno.fontWeight || 'bold') : 'normal',
                   fontFamily: anno.type === 'text' ? (anno.fontFamily || 'sans-serif') : 'inherit',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
                 }}
               >
                 {anno.type === 'text' && (
-                  <div className="whitespace-nowrap px-1 select-none leading-tight">
+                  <div className="w-full h-full flex items-center justify-center select-none leading-none text-center overflow-hidden">
                     {anno.text}
                   </div>
                 )}
                 {anno.type === 'image' && anno.image && (
-                  <img src={anno.image} alt="Annotation" className="w-full h-full object-contain" />
+                  <img src={anno.image} alt="Annotation" className="w-full h-full block" />
                 )}
               </div>
             ))}
@@ -108,10 +111,10 @@ export const PageCard: React.FC<PageCardProps> = React.memo(({ page, onEdit, onD
               e.stopPropagation();
               onEdit(page);
             }}
-            className="absolute top-4 right-4 px-4 py-2 bg-brand-500 hover:bg-brand-600 text-white rounded-xl font-black text-[10px] uppercase tracking-widest shadow-xl transform scale-90 group-hover:scale-100 transition-all duration-300 flex items-center gap-2 pointer-events-auto border border-white/20"
+            className="absolute top-4 right-4 p-2.5 bg-brand-500 hover:bg-brand-600 text-white rounded-xl shadow-xl transform scale-90 group-hover:scale-100 transition-all duration-300 flex items-center justify-center pointer-events-auto border border-white/20"
+            title="Edit Page"
           >
-            <ArrowUpRight size={14} strokeWidth={3} />
-            Edit Page
+            <ArrowUpRight size={18} strokeWidth={3} />
           </button>
         </div>
 

@@ -15,6 +15,8 @@ interface OrganizerSidebarProps {
   onDownload: () => void;
   onFileReorder: (event: DragEndEvent) => void;
   className?: string;
+  hideFooter?: boolean;
+  hideProTip?: boolean;
 }
 
 export const OrganizerSidebar: React.FC<OrganizerSidebarProps> = ({
@@ -25,6 +27,8 @@ export const OrganizerSidebar: React.FC<OrganizerSidebarProps> = ({
   onDownload,
   onFileReorder,
   className,
+  hideFooter = false,
+  hideProTip = false,
 }) => {
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -74,44 +78,48 @@ export const OrganizerSidebar: React.FC<OrganizerSidebarProps> = ({
             </SortableContext>
           </DndContext>
           
-          <div className="p-6 bg-brand-500/5 dark:bg-brand-500/10 rounded-[32px] border border-brand-500/10 dark:border-brand-500/20 shadow-inner relative overflow-hidden group">
-            <div className="absolute top-0 right-0 w-20 h-20 bg-brand-500/10 blur-3xl rounded-full -mr-10 -mt-10 group-hover:scale-150 transition-transform duration-700" />
-            <p className="text-[11px] text-brand-600/70 dark:text-brand-400/70 font-bold leading-relaxed uppercase tracking-widest relative z-10">
-              Pro Tip: Drag files above to reorder all associated pages instantly.
-            </p>
-          </div>
+          {!hideProTip && (
+            <div className="p-6 bg-brand-500/5 dark:bg-brand-500/10 rounded-[32px] border border-brand-500/10 dark:border-brand-500/20 shadow-inner relative overflow-hidden group">
+              <div className="absolute top-0 right-0 w-20 h-20 bg-brand-500/10 blur-3xl rounded-full -mr-10 -mt-10 group-hover:scale-150 transition-transform duration-700" />
+              <p className="text-[11px] text-brand-600/70 dark:text-brand-400/70 font-bold leading-relaxed uppercase tracking-widest relative z-10">
+                Pro Tip: Drag files above to reorder all associated pages instantly.
+              </p>
+            </div>
+          )}
         </div>
       </div>
       
       {/* Fixed Bottom Section of Sidebar - Always Visible */}
-      <div className="p-10 border-t border-slate-200 dark:border-dark-border bg-white dark:bg-dark-card shadow-saas-xl relative z-10">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-1/2 h-px bg-gradient-to-r from-transparent via-brand-500/30 to-transparent" />
-        
-        <motion.button 
-          whileHover={{ scale: 1.02, y: -4 }}
-          whileTap={{ scale: 0.98 }}
-          onClick={onDownload}
-          disabled={isProcessing || pages.length === 0}
-          className={clsx(
-            "w-full flex items-center justify-center gap-5 px-8 py-6 rounded-[32px] font-black text-sm transition-all shadow-saas-2xl active:scale-[0.98] uppercase tracking-[0.3em] border-2",
-            isProcessing || pages.length === 0
-              ? "bg-slate-50 dark:bg-dark-section text-slate-300 border-slate-100 dark:border-dark-border cursor-not-allowed"
-              : "bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-500 hover:to-brand-400 text-white shadow-brand-600/40 border-brand-400/50 glow-accent"
-          )}
-        >
-          {isProcessing ? (
-            <>
-              <Loader2 className="w-6 h-6 animate-spin" />
-              <span>Processing...</span>
-            </>
-          ) : (
-            <>
-              <Download size={24} strokeWidth={3} />
-              <span>Download PDF</span>
-            </>
-          )}
-        </motion.button>
-      </div>
+      {!hideFooter && (
+        <div className="p-10 border-t border-slate-200 dark:border-dark-border bg-white dark:bg-dark-card shadow-saas-xl relative z-10">
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-1/2 h-px bg-gradient-to-r from-transparent via-brand-500/30 to-transparent" />
+          
+          <motion.button 
+            whileHover={{ scale: 1.02, y: -4 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={onDownload}
+            disabled={isProcessing || pages.length === 0}
+            className={clsx(
+              "w-full flex items-center justify-center gap-5 px-8 py-6 rounded-[32px] font-black text-sm transition-all shadow-saas-2xl active:scale-[0.98] uppercase tracking-[0.3em] border-2",
+              isProcessing || pages.length === 0
+                ? "bg-slate-50 dark:bg-dark-section text-slate-300 border-slate-100 dark:border-dark-border cursor-not-allowed"
+                : "bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-500 hover:to-brand-400 text-white shadow-brand-600/40 border-brand-400/50 glow-accent"
+            )}
+          >
+            {isProcessing ? (
+              <>
+                <Loader2 className="w-6 h-6 animate-spin" />
+                <span>Processing...</span>
+              </>
+            ) : (
+              <>
+                <Download size={24} strokeWidth={3} />
+                <span>Download PDF</span>
+              </>
+            )}
+          </motion.button>
+        </div>
+      )}
     </aside>
   );
 };
