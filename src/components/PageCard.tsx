@@ -12,6 +12,45 @@ interface PageCardProps {
   onRotate: (id: string) => void;
 }
 
+const TextAnnotationPreview: React.FC<{ anno: any }> = ({ anno }) => {
+  const textRef = React.useRef<HTMLSpanElement>(null);
+  const [scale, setScale] = React.useState({ x: 1, y: 1 });
+
+  React.useLayoutEffect(() => {
+    const span = textRef.current;
+    const parent = span?.parentElement;
+    if (span && parent) {
+      const parentWidth = parent.clientWidth || 1;
+      const parentHeight = parent.clientHeight || 1;
+      const textWidth = span.offsetWidth || 1;
+      const textHeight = span.offsetHeight || 1;
+
+      setScale({
+        x: parentWidth / textWidth,
+        y: parentHeight / textHeight
+      });
+    }
+  }, [anno.text, anno.width, anno.height, anno.fontSize, anno.fontWeight, anno.fontFamily]);
+
+  return (
+    <div className="w-full h-full flex items-center justify-center overflow-hidden">
+      <span 
+        ref={textRef}
+        className="whitespace-nowrap select-none leading-none inline-block origin-center"
+        style={{
+          transform: `scale(${scale.x}, ${scale.y})`,
+          fontSize: `${Math.max(2, anno.fontSize! / 4)}px`,
+          fontWeight: anno.fontWeight || 'bold',
+          fontFamily: anno.fontFamily || 'sans-serif',
+          color: anno.color
+        }}
+      >
+        {anno.text}
+      </span>
+    </div>
+  );
+};
+
 export const PageCard: React.FC<PageCardProps> = React.memo(({ page, onEdit, onDelete, onRotate }) => {
   const {
     attributes,
@@ -79,8 +118,8 @@ export const PageCard: React.FC<PageCardProps> = React.memo(({ page, onEdit, onD
                 style={{
                   left: `${anno.x}%`,
                   top: `${anno.y}%`,
-                  width: (anno.type === 'rect' || anno.type === 'image' || anno.type === 'text') ? `${anno.width}%` : 'auto',
-                  height: (anno.type === 'rect' || anno.type === 'image' || anno.type === 'text') ? `${anno.height}%` : 'auto',
+                  width: `${anno.width || (anno.type === 'text' ? 20 : 10)}%`,
+                  height: `${anno.height || (anno.type === 'text' ? 5 : 10)}%`,
                   backgroundColor: anno.type === 'rect' ? anno.color : 'transparent',
                   color: anno.type === 'text' ? anno.color : 'inherit',
                   fontSize: anno.type === 'text' ? `${Math.max(2, anno.fontSize! / 4)}px` : 'inherit',
@@ -88,13 +127,12 @@ export const PageCard: React.FC<PageCardProps> = React.memo(({ page, onEdit, onD
                   fontFamily: anno.type === 'text' ? (anno.fontFamily || 'sans-serif') : 'inherit',
                   display: 'flex',
                   alignItems: 'center',
-                  justifyContent: 'center'
+                  justifyContent: 'center',
+                  transform: `rotate(${anno.rotation || 0}deg)`
                 }}
               >
                 {anno.type === 'text' && (
-                  <div className="w-full h-full flex items-center justify-center select-none leading-none text-center overflow-hidden">
-                    {anno.text}
-                  </div>
+                  <TextAnnotationPreview anno={anno} />
                 )}
                 {anno.type === 'image' && anno.image && (
                   <img src={anno.image} alt="Annotation" className="w-full h-full block" />

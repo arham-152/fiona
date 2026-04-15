@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion } from 'motion/react';
 import ReactCrop, { Crop, PixelCrop } from 'react-image-crop';
-import { Trash2, ZoomIn, ZoomOut, RotateCcw, RotateCw, Sparkles, Check, X, Loader2 } from 'lucide-react';
+import { Trash2, ZoomIn, ZoomOut, RotateCcw, RotateCw, Sparkles, Check, X, Loader2, RotateCw as RotateIcon } from 'lucide-react';
 import { clsx } from 'clsx';
 import { PageItem, Annotation } from '../../types';
 import { IconButton } from '../ui/IconButton';
@@ -34,6 +34,45 @@ interface EditorCanvasProps {
   commitAnnotationChange: () => void;
   removeAnnotation: (id: string) => void;
 }
+
+const TextAnnotation: React.FC<{ anno: Annotation }> = ({ anno }) => {
+  const textRef = React.useRef<HTMLSpanElement>(null);
+  const [scale, setScale] = React.useState({ x: 1, y: 1 });
+
+  React.useLayoutEffect(() => {
+    const span = textRef.current;
+    const parent = span?.parentElement;
+    if (span && parent) {
+      const parentWidth = parent.clientWidth || 1;
+      const parentHeight = parent.clientHeight || 1;
+      const textWidth = span.offsetWidth || 1;
+      const textHeight = span.offsetHeight || 1;
+
+      setScale({
+        x: parentWidth / textWidth,
+        y: parentHeight / textHeight
+      });
+    }
+  }, [anno.text, anno.width, anno.height, anno.fontSize, anno.fontWeight, anno.fontFamily]);
+
+  return (
+    <div className="w-full h-full flex items-center justify-center overflow-hidden">
+      <span 
+        ref={textRef}
+        className="whitespace-nowrap select-none leading-none inline-block origin-center"
+        style={{
+          transform: `scale(${scale.x}, ${scale.y})`,
+          fontSize: `${anno.fontSize || 24}px`,
+          fontWeight: anno.fontWeight || 'bold',
+          fontFamily: anno.fontFamily || 'sans-serif',
+          color: anno.color
+        }}
+      >
+        {anno.text}
+      </span>
+    </div>
+  );
+};
 
 export const EditorCanvas: React.FC<EditorCanvasProps> = ({
   editedPage,
@@ -220,8 +259,8 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = ({
                   style={{
                     left: `${anno.x}%`,
                     top: `${anno.y}%`,
-                    width: (anno.type === 'rect' || anno.type === 'image' || anno.type === 'text') ? `${anno.width}%` : 'auto',
-                    height: (anno.type === 'rect' || anno.type === 'image' || anno.type === 'text') ? `${anno.height}%` : 'auto',
+                    width: `${anno.width || (anno.type === 'text' ? 20 : 10)}%`,
+                    height: `${anno.height || (anno.type === 'text' ? 5 : 10)}%`,
                     backgroundColor: anno.type === 'rect' ? anno.color : 'transparent',
                     color: anno.type === 'text' ? anno.color : 'inherit',
                     fontSize: anno.type === 'text' ? `${anno.fontSize}px` : 'inherit',
@@ -231,7 +270,8 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = ({
                     borderRadius: anno.type === 'rect' ? '4px' : '0',
                     display: 'flex',
                     alignItems: 'center',
-                    justifyContent: 'center'
+                    justifyContent: 'center',
+                    transform: `rotate(${anno.rotation || 0}deg)`
                   }}
                   onClick={(e) => {
                     e.stopPropagation();
@@ -240,25 +280,45 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = ({
                   onMouseDown={(e) => {
                     if (selectedAnnotationId !== anno.id || editingAnnotationId === anno.id) return;
                     
-                    // Check if clicking a resize handle
+                    // Check if clicking a resize handle or rotation handle
                     const target = e.target as HTMLElement;
-                    const isHandle = target.dataset.handle;
+                    const handle = target.closest('[data-handle], [data-rotate]') as HTMLElement;
+                    const isHandle = handle?.dataset.handle;
+                    const isRotate = handle?.dataset.rotate;
                     
                     const startX = e.clientX;
                     const startY = e.clientY;
                     const initialX = anno.x;
                     const initialY = anno.y;
-                    const initialWidth = anno.width || 0;
-                    const initialHeight = anno.height || 0;
+                    const initialWidth = anno.width || (anno.type === 'text' ? 20 : 10);
+                    const initialHeight = anno.height || (anno.type === 'text' ? 5 : 10);
+                    const initialRotation = anno.rotation || 0;
                     
                     const rotationRad = (editedPage.rotation * Math.PI) / 180;
                     let hasMoved = false;
 
                     const onMouseMove = (moveEvent: MouseEvent) => {
-                      // Use imgRef to get the actual displayed dimensions of the page
                       const img = imgRef.current;
                       if (!img) return;
                       
+                      const rect = img.getBoundingClientRect();
+                      
+                      if (isRotate) {
+                        // Calculate center of annotation in pixels
+                        const centerX = rect.left + (initialX + initialWidth / 2) * (rect.width / 100);
+                        const centerY = rect.top + (initialY + initialHeight / 2) * (rect.height / 100);
+                        
+                        const dx = moveEvent.clientX - centerX;
+                        const dy = moveEvent.clientY - centerY;
+                        
+                        let angle = Math.atan2(dy, dx) * (180 / Math.PI);
+                        // Adjust angle because handle is at the top (90 degrees offset)
+                        angle += 90;
+                        
+                        updateAnnotation(anno.id, { rotation: Math.round(angle) });
+                        return;
+                      }
+
                       const rawDx = moveEvent.clientX - startX;
                       const rawDy = moveEvent.clientY - startY;
                       
@@ -320,11 +380,7 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = ({
                   }}
                 >
                   {anno.type === 'text' && (
-                    <div 
-                      className="w-full h-full flex items-center justify-center select-none leading-none text-center overflow-hidden"
-                    >
-                      {anno.text}
-                    </div>
+                    <TextAnnotation anno={anno} />
                   )}
                   {anno.type === 'image' && (
                     <img src={anno.image} alt="Annotation" className="w-full h-full block pointer-events-none" />
@@ -344,10 +400,21 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = ({
                           <div data-handle="left" className="absolute top-1/2 -left-1.5 -translate-y-1/2 w-1.5 h-6 bg-brand-500 rounded-full cursor-ew-resize z-50" />
                           <div data-handle="right" className="absolute top-1/2 -right-1.5 -translate-y-1/2 w-1.5 h-6 bg-brand-500 rounded-full cursor-ew-resize z-50" />
                           <div data-handle="bottom" className="absolute left-1/2 -bottom-1.5 -translate-x-1/2 w-6 h-1.5 bg-brand-500 rounded-full cursor-ns-resize z-50" />
+
+                          {/* Rotation Handle */}
+                          <div 
+                            data-rotate="true"
+                            className="absolute -top-10 left-1/2 -translate-x-1/2 flex flex-col items-center group/rotate pointer-events-auto"
+                          >
+                            <div className="w-0.5 h-6 bg-brand-500" />
+                            <div className="w-8 h-8 bg-white dark:bg-dark-card border-2 border-brand-500 rounded-full flex items-center justify-center shadow-lg cursor-grab active:cursor-grabbing hover:scale-110 transition-transform">
+                              <RotateIcon size={14} className="text-brand-500" />
+                            </div>
+                          </div>
                         </>
                       )}
 
-                      <div className="absolute -top-12 left-1/2 -translate-x-1/2 flex items-center gap-1.5 p-1.5 glass rounded-xl shadow-xl z-50 pointer-events-auto">
+                      <div className="absolute -bottom-12 left-1/2 -translate-x-1/2 flex items-center gap-1.5 p-1.5 glass rounded-xl shadow-xl z-50 pointer-events-auto">
                         <IconButton 
                           icon={<Trash2 size={14} />}
                           variant="danger"

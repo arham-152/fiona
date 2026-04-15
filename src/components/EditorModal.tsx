@@ -75,9 +75,12 @@ export const EditorModal: React.FC<EditorModalProps> = ({
       type: 'text',
       x: 40,
       y: 40,
+      width: 20,
+      height: 5,
       text: 'New Text',
       color: '#6366F1',
       fontSize: 24,
+      rotation: 0
     };
     addAnnotation(newAnno);
     setSelectedAnnotationId(newAnno.id);
@@ -93,6 +96,7 @@ export const EditorModal: React.FC<EditorModalProps> = ({
       width: 20,
       height: 10,
       color: 'rgba(99, 102, 241, 0.3)',
+      rotation: 0
     };
     addAnnotation(newAnno);
     setSelectedAnnotationId(newAnno.id);
@@ -123,6 +127,7 @@ export const EditorModal: React.FC<EditorModalProps> = ({
               height: height,
               image: re.target?.result as string,
               color: 'transparent',
+              rotation: 0
             };
             addAnnotation(newAnno);
             setSelectedAnnotationId(newAnno.id);

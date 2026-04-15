@@ -214,58 +214,77 @@ export async function applyAdjustmentsToImage(pageItem: PageItem): Promise<strin
       // Reset filter for annotations
       ctx.filter = 'none';
       
-      // Draw annotations
-      if (pageItem.annotations && pageItem.annotations.length > 0) {
-        const annotationPromises = pageItem.annotations.map(async anno => {
-          const x = (anno.x / 100) * canvas.width;
-          const y = (anno.y / 100) * canvas.height;
-          
-          ctx.save();
-          
-          // If the annotation itself has rotation
-          if (anno.rotation) {
-            ctx.translate(x, y);
-            ctx.rotate((anno.rotation * Math.PI) / 180);
-            ctx.translate(-x, -y);
-          }
+          // Draw annotations
+          if (pageItem.annotations && pageItem.annotations.length > 0) {
+            const annotationPromises = pageItem.annotations.map(async anno => {
+              // Default dimensions if missing
+              const annoWidth = anno.width || (anno.type === 'text' ? 20 : 10);
+              const annoHeight = anno.height || (anno.type === 'text' ? 5 : 10);
+              
+              const w = (annoWidth / 100) * canvas.width;
+              const h = (annoHeight / 100) * canvas.height;
+              const x = (anno.x / 100) * canvas.width;
+              const y = (anno.y / 100) * canvas.height;
+              
+              // Center of annotation
+              const cx = x + w / 2;
+              const cy = y + h / 2;
+              
+              ctx.save();
+              
+              // Rotate around center
+              ctx.translate(cx, cy);
+              if (anno.rotation) {
+                ctx.rotate((anno.rotation * Math.PI) / 180);
+              }
+              
+              // Move back to top-left of the annotation area for drawing
+              ctx.translate(-w / 2, -h / 2);
 
-          if (anno.type === 'rect') {
-            const w = (anno.width! / 100) * canvas.width;
-            const h = (anno.height! / 100) * canvas.height;
-            ctx.fillStyle = anno.color || 'rgba(99, 102, 241, 0.3)';
-            ctx.fillRect(x, y, w, h);
-          } else if (anno.type === 'text') {
-            ctx.fillStyle = anno.color || '#000000';
-            // Scale font size based on canvas width
-            const baseScale = canvas.width / 800;
-            const scaledFontSize = (anno.fontSize || 24) * baseScale;
-            
-            ctx.font = `${anno.fontWeight || 'bold'} ${scaledFontSize}px ${anno.fontFamily || 'sans-serif'}`;
-            ctx.textBaseline = 'top';
-            ctx.fillText(anno.text || '', x, y);
-          } else if (anno.type === 'image' && anno.image) {
-            const w = (anno.width! / 100) * canvas.width;
-            const h = (anno.height! / 100) * canvas.height;
-            
-            const annoImg = new Image();
-            annoImg.crossOrigin = 'anonymous';
-            await new Promise((resolveAnno) => {
-              annoImg.onload = () => {
-                ctx.drawImage(annoImg, x, y, w, h);
-                resolveAnno(true);
-              };
-              annoImg.onerror = () => {
-                console.error('Failed to load annotation image');
-                resolveAnno(false);
-              };
-              annoImg.src = anno.image!;
+              if (anno.type === 'rect') {
+                ctx.fillStyle = anno.color || 'rgba(99, 102, 241, 0.3)';
+                ctx.fillRect(0, 0, w, h);
+              } else if (anno.type === 'text') {
+                ctx.fillStyle = anno.color || '#000000';
+                
+                const baseFontSize = anno.fontSize || 24;
+                ctx.font = `${anno.fontWeight || 'bold'} ${baseFontSize}px ${anno.fontFamily || 'sans-serif'}`;
+                ctx.textBaseline = 'middle';
+                ctx.textAlign = 'center';
+                
+                const metrics = ctx.measureText(anno.text || '');
+                const textWidth = metrics.width || 1;
+                const textHeight = baseFontSize || 1;
+                
+                ctx.save();
+                ctx.translate(w / 2, h / 2);
+                
+                const scaleX = w / textWidth;
+                const scaleY = h / textHeight;
+                ctx.scale(scaleX, scaleY);
+                
+                ctx.fillText(anno.text || '', 0, 0);
+                ctx.restore();
+              } else if (anno.type === 'image' && anno.image) {
+                const annoImg = new Image();
+                annoImg.crossOrigin = 'anonymous';
+                await new Promise((resolveAnno) => {
+                  annoImg.onload = () => {
+                    ctx.drawImage(annoImg, 0, 0, w, h);
+                    resolveAnno(true);
+                  };
+                  annoImg.onerror = () => {
+                    console.error('Failed to load annotation image');
+                    resolveAnno(false);
+                  };
+                  annoImg.src = anno.image!;
+                });
+              }
+              ctx.restore();
             });
-          }
-          ctx.restore();
-        });
 
-        await Promise.all(annotationPromises);
-      }
+            await Promise.all(annotationPromises);
+          }
       
       try {
         resolve(canvas.toDataURL('image/jpeg', 1.0)); // High quality JPEG for speed
